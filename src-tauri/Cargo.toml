@@ -1,0 +1,14 @@
+[package]
+name = "lightedit"
+version = "0.4.0"
+description = "A lightweight editor for quick notes, JSON, SQL, and scratch text."
+authors = ["LightEdit"]
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"

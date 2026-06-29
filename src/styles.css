@@ -1,0 +1,772 @@
+:root {
+  color-scheme: light;
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  font-weight: 400;
+  color: var(--text);
+  background: var(--window);
+  --bg-app: #f7f3ea;
+  --window: #fffdf8;
+  --editor-bg: #fffffd;
+  --chrome: #fbf6ea;
+  --panel: var(--editor-bg);
+  --panel-2: #fffefb;
+  --line: #e8dfd1;
+  --line-soft: rgba(232, 223, 209, 0.38);
+  --hover-soft: rgba(255, 249, 239, 0.34);
+  --hover-active: rgba(255, 249, 239, 0.74);
+  --active: rgba(255, 248, 232, 0.36);
+  --accent: #efa11a;
+  --accent-soft: #ffe7a6;
+  --text: #2f2a24;
+  --muted: #7a736a;
+  --muted-2: #b8ada0;
+  --blue: #2e6f9f;
+  --orange: #b86b35;
+  --green: #2f8352;
+  --rail-width: 104px;
+  --safe-area-width: var(--rail-width);
+  --topbar-height: 50px;
+  --toolbar-height: 50px;
+  --toolbar-font-size: 0.86rem;
+  --project-tab-width: 146px;
+  --right-control-inset: 16px;
+  --line-number-width: 52px;
+  --editor-line-height: 23px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  margin: 0;
+  background: var(--window);
+}
+
+body {
+  overflow: hidden;
+}
+
+button,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  color: inherit;
+}
+
+.appFrame {
+  display: grid;
+  place-items: center;
+  width: 100vw;
+  height: 100vh;
+  min-height: 100vh;
+  padding: 0;
+  overflow: hidden;
+  background: var(--window);
+}
+
+.windowShell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100vw;
+  height: 100vh;
+  min-height: 0;
+  overflow: hidden;
+  border: 0;
+  background: var(--window);
+  box-shadow: none;
+}
+
+.topBar {
+  position: relative;
+  z-index: 4;
+  display: flex;
+  align-items: stretch;
+  min-height: var(--topbar-height);
+  border-bottom: 1px solid var(--line-soft);
+  background: var(--chrome);
+  -webkit-app-region: drag;
+}
+
+.notesSlot {
+  position: relative;
+  align-self: stretch;
+  flex: 0 0 var(--safe-area-width);
+}
+
+.notesMenu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 8px;
+  width: min(272px, calc(100vw - 48px));
+  overflow: hidden;
+  border: 1px solid rgba(225, 212, 194, 0.96);
+  border-radius: 8px;
+  background: #fffdf8;
+  box-shadow:
+    0 18px 38px rgba(67, 45, 20, 0.12),
+    0 3px 8px rgba(67, 45, 20, 0.08);
+}
+
+.notesMenuList {
+  max-height: 256px;
+  overflow: auto;
+  padding: 8px;
+}
+
+.notesMenuItem,
+.notesNewProject {
+  width: 100%;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.notesMenuItem {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+  text-align: left;
+}
+
+.notesMenuItem:hover,
+.notesMenuItem.active {
+  background: var(--active);
+}
+
+.notesMenuItem span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notesMenuItem small {
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.notesNewProject {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 12px 18px;
+  border-top: 1px solid var(--line-soft);
+  color: var(--text);
+}
+
+.notesNewProject:hover {
+  background: var(--panel);
+}
+
+.tabsViewport {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-app-region: no-drag;
+}
+
+.tabsViewport::-webkit-scrollbar {
+  display: none;
+}
+
+.tabsTrack {
+  display: flex;
+  align-items: flex-end;
+  height: 100%;
+  min-width: min-content;
+}
+
+.projectTab {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  flex: 0 0 var(--project-tab-width);
+  height: var(--topbar-height);
+  width: var(--project-tab-width);
+  min-width: 0;
+  border: 0;
+  border-radius: 12px 12px 0 0;
+  background: transparent;
+  transition:
+    color 120ms ease,
+    background 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.projectTab.active {
+  flex-basis: var(--project-tab-width);
+  width: var(--project-tab-width);
+  height: var(--topbar-height);
+  background: rgba(255, 255, 253, 0.72);
+  font-weight: 480;
+  box-shadow: none;
+}
+
+.projectTab.active:hover {
+  background: var(--hover-active);
+  box-shadow: none;
+}
+
+.projectTab::before {
+  content: "";
+  position: absolute;
+  top: 17px;
+  right: 0;
+  width: 1px;
+  height: 16px;
+  border-radius: 999px;
+  background: rgba(216, 204, 184, 0.16);
+}
+
+.projectTab:hover::before,
+.projectTab.active::before {
+  opacity: 0;
+}
+
+.projectTab.active::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 22px;
+  right: 36px;
+  min-width: 56px;
+  height: 1.5px;
+  border-radius: 999px;
+  background: var(--accent);
+}
+
+.projectTabButton {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  padding: 0 34px 0 22px;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  color: var(--muted);
+  font-weight: 390;
+}
+
+.projectTab.active .projectTabButton {
+  color: var(--text);
+  font-weight: 480;
+}
+
+.projectTabButton span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.projectTab:hover,
+.projectTabButton:hover {
+  background: var(--hover-soft);
+}
+
+.projectTab.active .projectTabButton:hover {
+  background: transparent;
+}
+
+.iconButton,
+.addProjectButton,
+.notesMenuButton,
+.pinButton,
+.toolbarAction,
+.starAction {
+  display: inline-grid;
+  place-items: center;
+  appearance: none;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+}
+
+.tabClose {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  width: 28px;
+  height: 28px;
+  transform: translateY(-50%);
+  border-radius: 50%;
+  color: var(--muted-2);
+  opacity: 0;
+  transition:
+    color 120ms ease,
+    opacity 120ms ease,
+    background 120ms ease;
+}
+
+.projectTab.active .tabClose,
+.projectTab:hover .tabClose {
+  opacity: 0.72;
+}
+
+.tabClose:hover,
+.versionDelete:hover {
+  color: #786f62;
+  background: rgba(219, 203, 176, 0.18);
+}
+
+.addProjectButton {
+  align-self: center;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 38px;
+  margin: 0 12px 0 10px;
+  border: 0;
+  border-radius: 8px;
+  outline: 0;
+  color: #4c463e;
+  background: transparent;
+  box-shadow: none;
+  -webkit-app-region: no-drag;
+}
+
+.addProjectButton:hover,
+.addProjectButton:focus,
+.addProjectButton:focus-visible {
+  color: var(--text);
+  background: var(--hover-active);
+  outline: 0;
+}
+
+.topBarSpacer {
+  display: none;
+}
+
+.notesMenuSlot {
+  position: relative;
+  align-self: stretch;
+  display: grid;
+  place-items: center;
+  flex: 0 0 92px;
+  -webkit-app-region: no-drag;
+}
+
+.notesMenuButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 76px;
+  height: 38px;
+  border: 0;
+  border-radius: 8px;
+  color: #5d5850;
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 450;
+}
+
+.notesMenuButton:hover,
+.notesMenuButton.active {
+  color: var(--text);
+  background: var(--hover-active);
+}
+
+.pinButton {
+  align-self: center;
+  width: 38px;
+  height: 38px;
+  margin: 0 var(--right-control-inset) 0 0;
+  border-radius: 8px;
+  color: #5d5850;
+}
+
+.pinButton:hover,
+.pinButton.active {
+  background: var(--hover-active);
+}
+
+.pinButton:hover {
+  color: var(--text);
+}
+
+.pinButton.active {
+  color: var(--accent);
+}
+
+.pinIcon {
+  transform: translateX(-1px) rotate(26deg);
+  transform-origin: 50% 58%;
+}
+
+.workbench {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+.versionRail {
+  flex: 0 0 var(--rail-width);
+  overflow-y: auto;
+  border-right: 1px solid var(--line-soft);
+  background: var(--panel);
+  scrollbar-color: transparent transparent;
+  scrollbar-width: thin;
+}
+
+.versionRail:hover {
+  scrollbar-color: rgba(185, 177, 165, 0.5) transparent;
+}
+
+.versionRow {
+  position: relative;
+  min-height: 56px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.versionRow.active {
+  background: var(--active);
+}
+
+.versionRow.active::before {
+  content: "";
+  position: absolute;
+  top: 14px;
+  bottom: 14px;
+  left: 0;
+  width: 2px;
+  border-radius: 999px;
+  background: var(--accent);
+}
+
+.versionSelect {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  min-height: inherit;
+  padding: 0 28px 0 24px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
+.versionSelect span {
+  color: #5a5249;
+  font-size: 0.92rem;
+  font-weight: 390;
+}
+
+.versionRow.active .versionSelect span {
+  color: var(--text);
+  font-weight: 480;
+}
+
+.versionRow:hover {
+  background: var(--hover-soft);
+}
+
+.versionRow.active:hover {
+  background: var(--hover-active);
+}
+
+.versionDelete {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  transform: translateY(-50%);
+  border-radius: 50%;
+  color: var(--muted-2);
+  opacity: 0;
+  transition:
+    color 120ms ease,
+    opacity 120ms ease,
+    background 120ms ease;
+}
+
+.versionRow.active .versionDelete,
+.versionRow:hover .versionDelete {
+  opacity: 0.72;
+}
+
+.editorColumn {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  background: var(--editor-bg);
+}
+
+.editorToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: var(--toolbar-height);
+  padding: 0 var(--right-control-inset) 0 26px;
+  border-bottom: 0;
+  background: var(--editor-bg);
+  font-size: var(--toolbar-font-size);
+}
+
+.toolbarLeft,
+.toolbarRight {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.toolbarLeft {
+  gap: 0;
+}
+
+.toolbarRight {
+  gap: 14px;
+}
+
+.toolbarLabel {
+  display: none;
+  color: var(--text);
+}
+
+.typeSelectWrap {
+  position: relative;
+  border-radius: 8px;
+}
+
+.typeSelect {
+  min-width: 82px;
+  padding: 8px 28px 8px 10px;
+  border: 0;
+  outline: 0;
+  color: #403a32;
+  background: transparent;
+  appearance: none;
+  cursor: pointer;
+  font-size: var(--toolbar-font-size);
+}
+
+.typeSelectWrap:hover {
+  background: var(--hover-soft);
+}
+
+.typeSelectWrap::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  width: 8px;
+  height: 8px;
+  border-right: 1.5px solid #5b554d;
+  border-bottom: 1.5px solid #5b554d;
+  pointer-events: none;
+  transform: translateY(-70%) rotate(45deg);
+}
+
+.toolbarAction {
+  grid-auto-flow: column;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 8px;
+  border-radius: 8px;
+  color: #4d463d;
+  font-size: var(--toolbar-font-size);
+}
+
+.toolbarAction:hover,
+.starAction:hover {
+  color: var(--text);
+  background: var(--hover-active);
+}
+
+.toolbarDivider {
+  display: none;
+  width: 1px;
+  height: 26px;
+  background: var(--line-soft);
+}
+
+.starAction {
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  color: #4d463d;
+}
+
+.starAction.active {
+  color: var(--accent);
+}
+
+.starAction.active:hover {
+  color: var(--accent);
+}
+
+.editorPane {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  background: var(--editor-bg);
+}
+
+.lineNumbers {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  display: flex;
+  flex: 0 0 var(--line-number-width);
+  flex-direction: column;
+  gap: 0;
+  padding: 22px 10px 22px 0;
+  border-right: 0;
+  background: var(--editor-bg);
+  color: #a9b3bc;
+  text-align: right;
+  font-family: "JetBrains Mono", "SF Mono", Menlo, Monaco, Consolas, monospace;
+  font-size: 13px;
+  line-height: var(--editor-line-height);
+  user-select: none;
+}
+
+.codeSurface {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  background: var(--editor-bg);
+}
+
+.syntaxLayer,
+.codeInput {
+  margin: 0;
+  padding: 22px 24px;
+  border: 0;
+  font-family: "JetBrains Mono", "SF Mono", Menlo, Monaco, Consolas, monospace;
+  font-size: 14px;
+  line-height: var(--editor-line-height);
+  letter-spacing: 0;
+  tab-size: 2;
+  white-space: pre;
+}
+
+.syntaxLayer {
+  position: absolute;
+  inset: 0;
+  min-width: max-content;
+  color: #3f4a52;
+  pointer-events: none;
+}
+
+.codeInput {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  min-width: 100%;
+  overflow: hidden;
+  resize: none;
+  outline: 0;
+  color: rgba(47, 42, 35, 0.02);
+  caret-color: #2f2a23;
+  background: transparent;
+}
+
+.codeInput::selection {
+  color: rgba(47, 42, 35, 0.9);
+  background: rgba(245, 160, 0, 0.2);
+}
+
+.tokenKey {
+  color: var(--blue);
+}
+
+.tokenString {
+  color: var(--orange);
+}
+
+.tokenNumber {
+  color: #7f6aa8;
+}
+
+.tokenBoolean {
+  color: var(--green);
+}
+
+.tokenNull {
+  color: #7f746b;
+}
+
+.toast {
+  position: fixed;
+  right: 28px;
+  bottom: 28px;
+  z-index: 20;
+  max-width: min(360px, calc(100vw - 56px));
+  padding: 12px 16px;
+  border: 1px solid rgba(225, 212, 194, 0.95);
+  border-radius: 8px;
+  color: var(--text);
+  background: rgba(255, 253, 248, 0.96);
+  box-shadow:
+    0 18px 36px rgba(65, 43, 19, 0.12),
+    0 2px 8px rgba(65, 43, 19, 0.08);
+}
+
+@media (max-width: 820px) {
+  :root {
+    --rail-width: 96px;
+    --safe-area-width: var(--rail-width);
+    --topbar-height: 50px;
+    --toolbar-height: 50px;
+    --project-tab-width: 136px;
+    --line-number-width: 40px;
+  }
+
+  .addProjectButton {
+    width: 32px;
+    height: 38px;
+    margin: 0 8px 0 6px;
+  }
+
+  .pinButton {
+    width: 42px;
+    height: 42px;
+    margin-right: 8px;
+  }
+
+  .editorToolbar {
+    padding: 0 14px;
+  }
+
+  .toolbarLeft {
+    gap: 10px;
+  }
+
+  .toolbarRight {
+    gap: 8px;
+  }
+
+  .toolbarLabel {
+    display: none;
+  }
+
+  .codeSurface {
+    min-width: 520px;
+  }
+}
