@@ -49,6 +49,7 @@ export default function TopBar({
 
   return (
     <header className="topBar">
+      <div className="windowDragLayer" data-tauri-drag-region aria-hidden="true" />
       <div className="notesSlot" aria-hidden="true" />
       <div className="tabsViewport">
         <div className="tabsTrack">
@@ -63,12 +64,19 @@ export default function TopBar({
           ))}
         </div>
       </div>
-      <button className="addProjectButton" aria-label="New project" title="New project" onClick={onAddProject}>
+      <button
+        className="addProjectButton"
+        data-window-control
+        aria-label="New project"
+        title="New project"
+        onClick={onAddProject}
+      >
         <Plus size={22} strokeWidth={1.7} />
       </button>
       <div className="notesMenuSlot" ref={notesMenuSlotRef}>
         <button
           className={`notesMenuButton ${notesOpen ? 'active' : ''}`}
+          data-window-control
           aria-label="Open notes menu"
           title="All projects"
           onClick={onToggleNotes}
@@ -87,6 +95,7 @@ export default function TopBar({
       </div>
       <button
         className={`pinButton ${isPinned ? 'active' : ''}`}
+        data-window-control
         aria-label="Pin window on top"
         title="Pin window on top"
         onClick={onTogglePin}

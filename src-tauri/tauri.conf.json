@@ -4,12 +4,13 @@
   "version": "0.4.0",
   "identifier": "com.lightedit.app",
   "build": {
-    "beforeDevCommand": "npm run dev -- --port 5173",
+    "beforeDevCommand": "npm run dev -- --port 5173 --strictPort",
     "devUrl": "http://127.0.0.1:5173",
     "beforeBuildCommand": "npm run build",
     "frontendDist": "../dist"
   },
   "app": {
+    "macOSPrivateApi": true,
     "windows": [
       {
         "label": "main",

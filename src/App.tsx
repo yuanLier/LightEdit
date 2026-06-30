@@ -4,6 +4,7 @@ import EditorToolbar from './components/EditorToolbar'
 import Toast from './components/Toast'
 import TopBar from './components/TopBar'
 import VersionRail from './components/VersionRail'
+import { listenForEditorFocusRequest, setMainWindowAlwaysOnTop } from './desktop'
 import { formatContent } from './formatters'
 import { createDefaultState, createId, loadState, saveState } from './storage'
 import type { AppState, Project, TextType, ToastState, Version } from './types'
@@ -101,6 +102,40 @@ export default function App() {
     const timer = window.setTimeout(() => setToast(null), 2200)
     return () => window.clearTimeout(timer)
   }, [toast])
+
+  useEffect(() => {
+    let canceled = false
+    let unlisten: (() => void) | undefined
+
+    listenForEditorFocusRequest(() => {
+      window.requestAnimationFrame(() => {
+        document.querySelector<HTMLTextAreaElement>('.codeInput')?.focus()
+      })
+    }).then((cleanup) => {
+      if (canceled) {
+        cleanup?.()
+        return
+      }
+      unlisten = cleanup
+    })
+
+    return () => {
+      canceled = true
+      unlisten?.()
+    }
+  }, [])
+
+  useEffect(() => {
+    let canceled = false
+
+    setMainWindowAlwaysOnTop(state.isPinned).catch(() => {
+      if (!canceled) showToast('Pin unavailable')
+    })
+
+    return () => {
+      canceled = true
+    }
+  }, [state.isPinned])
 
   function showToast(message: string) {
     setToast({ id: Date.now(), message })

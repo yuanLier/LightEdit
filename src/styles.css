@@ -97,13 +97,29 @@ button {
   min-height: var(--topbar-height);
   border-bottom: 1px solid var(--line-soft);
   background: var(--chrome);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.topBar *,
+.notesMenu {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.windowDragLayer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
   -webkit-app-region: drag;
 }
 
 .notesSlot {
   position: relative;
+  z-index: 1;
   align-self: stretch;
   flex: 0 0 var(--safe-area-width);
+  pointer-events: none;
 }
 
 .notesMenu {
@@ -174,12 +190,14 @@ button {
 }
 
 .tabsViewport {
+  position: relative;
+  z-index: 1;
   flex: 1 1 auto;
   min-width: 0;
   height: 100%;
   overflow-x: auto;
+  pointer-events: none;
   scrollbar-width: none;
-  -webkit-app-region: no-drag;
 }
 
 .tabsViewport::-webkit-scrollbar {
@@ -191,6 +209,7 @@ button {
   align-items: flex-end;
   height: 100%;
   min-width: min-content;
+  pointer-events: none;
 }
 
 .projectTab {
@@ -208,6 +227,7 @@ button {
     color 120ms ease,
     background 120ms ease,
     box-shadow 120ms ease;
+  pointer-events: auto;
 }
 
 .projectTab.active {
@@ -265,6 +285,7 @@ button {
   text-align: left;
   color: var(--muted);
   font-weight: 390;
+  -webkit-app-region: no-drag;
 }
 
 .projectTab.active .projectTabButton {
@@ -289,6 +310,7 @@ button {
 
 .iconButton,
 .addProjectButton,
+.projectTabButton,
 .notesMenuButton,
 .pinButton,
 .toolbarAction,
@@ -299,6 +321,11 @@ button {
   border: 0;
   background: transparent;
   cursor: pointer;
+  -webkit-app-region: no-drag;
+}
+
+[data-window-control],
+.notesMenu {
   -webkit-app-region: no-drag;
 }
 
@@ -330,6 +357,8 @@ button {
 }
 
 .addProjectButton {
+  position: relative;
+  z-index: 1;
   align-self: center;
   flex: 0 0 auto;
   width: 34px;
@@ -341,7 +370,6 @@ button {
   color: #4c463e;
   background: transparent;
   box-shadow: none;
-  -webkit-app-region: no-drag;
 }
 
 .addProjectButton:hover,
@@ -358,11 +386,11 @@ button {
 
 .notesMenuSlot {
   position: relative;
+  z-index: 1;
   align-self: stretch;
   display: grid;
   place-items: center;
   flex: 0 0 92px;
-  -webkit-app-region: no-drag;
 }
 
 .notesMenuButton {
@@ -388,6 +416,8 @@ button {
 }
 
 .pinButton {
+  position: relative;
+  z-index: 1;
   align-self: center;
   width: 38px;
   height: 38px;

@@ -24,11 +24,12 @@ export default function ProjectTab({
 
   return (
     <div ref={tabRef} className={`projectTab ${active ? 'active' : ''}`}>
-      <button className="projectTabButton" title={project.name} onClick={onSelect}>
+      <button className="projectTabButton" data-window-control title={project.name} onClick={onSelect}>
         <span>{project.name}</span>
       </button>
       <button
         className="iconButton tabClose"
+        data-window-control
         aria-label={`Delete ${project.name}`}
         title={`Delete ${project.name}`}
         onClick={(event) => {
