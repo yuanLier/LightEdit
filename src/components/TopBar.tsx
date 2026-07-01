@@ -58,7 +58,11 @@ export default function TopBar({
   }, [notesOpen, onCloseNotes])
 
   return (
-    <header className="topBar" data-tauri-drag-region>
+    <header
+      className="topBar"
+      data-tauri-drag-region
+      onContextMenu={(event) => event.preventDefault()}
+    >
       <div className="notesSlot" aria-hidden="true" />
       <div className="tabsViewport" data-tauri-drag-region>
         <div className="tabsTrack" data-tauri-drag-region>

@@ -104,6 +104,7 @@ function isVersion(value: unknown): value is Version {
     typeof value.id === 'string' &&
     typeof value.projectId === 'string' &&
     isPositiveInteger(value.versionIndex) &&
+    (value.name === undefined || typeof value.name === 'string') &&
     TEXT_TYPES.has(value.type as TextType) &&
     typeof value.content === 'string' &&
     typeof value.isStarred === 'boolean' &&

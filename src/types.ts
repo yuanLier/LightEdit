@@ -12,6 +12,7 @@ export type Version = {
   id: string
   projectId: string
   versionIndex: number
+  name?: string
   type: TextType
   content: string
   isStarred: boolean

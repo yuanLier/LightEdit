@@ -31,6 +31,7 @@ function renderVersionRail() {
     versions,
     activeVersionId: 'version-2',
     onSelectVersion: vi.fn(),
+    onRenameVersion: vi.fn(),
     onDeleteVersion: vi.fn(),
   }
 
@@ -39,32 +40,40 @@ function renderVersionRail() {
 }
 
 describe('VersionRail', () => {
-  it('uses the LightEdit context menu for version actions', () => {
+  it('uses the LightEdit context menu for inline version rename', () => {
     const props = renderVersionRail()
     const versionButton = screen.getByRole('button', { name: 'v1' })
 
     expect(fireEvent.contextMenu(versionButton, { clientX: 32, clientY: 180 })).toBe(false)
 
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Switch to Version' }))
-    expect(props.onSelectVersion).toHaveBeenCalledWith('version-1')
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Rename Version' }))
 
-    fireEvent.contextMenu(versionButton, { clientX: 32, clientY: 180 })
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Delete Version...' }))
+    const input = screen.getByLabelText('Rename v1')
+    fireEvent.change(input, { target: { value: 'Before API call' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+
+    expect(props.onRenameVersion).toHaveBeenCalledWith('version-1', 'Before API call')
+  })
+
+  it('keeps the compact delete button as the delete entry point', () => {
+    const props = renderVersionRail()
+
+    fireEvent.click(screen.getByLabelText('Delete v1'))
+
     expect(props.onDeleteVersion).toHaveBeenCalledWith('version-1')
   })
 
-  it('keeps delete disabled when only one version remains', () => {
+  it('renders custom version names in the rail', () => {
     render(
       <VersionRail
-        versions={[versions[0]]}
+        versions={[{ ...versions[0], name: 'Before API call' }]}
         activeVersionId="version-2"
         onSelectVersion={vi.fn()}
+        onRenameVersion={vi.fn()}
         onDeleteVersion={vi.fn()}
       />,
     )
 
-    fireEvent.contextMenu(screen.getByRole('button', { name: 'v2' }), { clientX: 32, clientY: 180 })
-
-    expect(screen.getByRole('menuitem', { name: 'Delete Version...' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Before API call' })).toBeInTheDocument()
   })
 })

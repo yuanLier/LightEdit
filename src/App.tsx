@@ -8,6 +8,7 @@ import { listenForEditorFocusRequest, setMainWindowAlwaysOnTop } from './desktop
 import { formatContent } from './formatters'
 import { createDefaultState, createId, loadState, saveState } from './storage'
 import type { AppState, Project, TextType, ToastState, Version } from './types'
+import { versionLabel } from './versionLabel'
 
 function sortVersions(versions: Version[]) {
   return [...versions].sort((a, b) => b.versionIndex - a.versionIndex)
@@ -337,6 +338,7 @@ export default function App() {
   function deleteVersion(versionId: string) {
     const versionToDelete = state.versions.find((version) => version.id === versionId)
     if (!versionToDelete) return
+    const label = versionLabel(versionToDelete)
 
     const versionsForActiveProject = state.versions.filter(
       (version) => version.projectId === state.activeProjectId,
@@ -348,7 +350,7 @@ export default function App() {
 
     if (
       versionToDelete.isStarred &&
-      !window.confirm(`v${versionToDelete.versionIndex} is starred. Delete this version?`)
+      !window.confirm(`${label} is starred. Delete this version?`)
     ) {
       showToast('Delete canceled')
       return
@@ -374,7 +376,28 @@ export default function App() {
         activeVersionId: nextVersion.id,
       }
     })
-    showToast(`Deleted v${versionToDelete.versionIndex}`)
+    showToast(`Deleted ${label}`)
+  }
+
+  function renameVersion(versionId: string, name: string) {
+    const version = state.versions.find((candidate) => candidate.id === versionId)
+    if (!version) return
+
+    const nextName = name.trim()
+    if (!nextName) return
+
+    const currentName = version.name?.trim() ?? ''
+    if (nextName === currentName || nextName === versionLabel(version)) return
+
+    setState((current) => ({
+      ...current,
+      versions: current.versions.map((candidate) =>
+        candidate.id === versionId
+          ? { ...candidate, name: nextName, updatedAt: Date.now() }
+          : candidate,
+      ),
+    }))
+    showToast(`Renamed to ${nextName}`)
   }
 
   function formatCurrent() {
@@ -422,6 +445,7 @@ export default function App() {
             versions={projectVersions}
             activeVersionId={state.activeVersionId}
             onSelectVersion={(versionId) => setState((current) => ({ ...current, activeVersionId: versionId }))}
+            onRenameVersion={renameVersion}
             onDeleteVersion={deleteVersion}
           />
           <section className="editorColumn" aria-label={`${activeProject.name} editor`}>

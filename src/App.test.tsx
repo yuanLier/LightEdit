@@ -44,4 +44,15 @@ describe('App project tabs', () => {
 
     expect(screen.getByRole('button', { name: 'LightEdit' })).toBeInTheDocument()
   })
+
+  it('prevents the browser context menu on the Notes chrome button', () => {
+    render(<App />)
+
+    expect(
+      fireEvent.contextMenu(screen.getByRole('button', { name: 'Open notes menu' }), {
+        clientX: 640,
+        clientY: 28,
+      }),
+    ).toBe(false)
+  })
 })

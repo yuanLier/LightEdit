@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent as ReactKeyboardEvent, MouseEvent } from 'react'
+import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 import type { Project } from '../types'
 import ContextMenu, { getContextMenuPosition } from './ContextMenu'
@@ -29,8 +30,11 @@ export default function ProjectTab({
 }: ProjectTabProps) {
   const tabRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const labelRef = useRef<HTMLSpanElement>(null)
+  const tooltipTimerRef = useRef<number | null>(null)
   const [draftName, setDraftName] = useState(project.name)
   const [menuPosition, setMenuPosition] = useState<{ x: number; y: number } | null>(null)
+  const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number } | null>(null)
 
   useEffect(() => {
     if (!active) return
@@ -46,6 +50,16 @@ export default function ProjectTab({
     })
   }, [project.name, renaming])
 
+  useEffect(() => {
+    return () => clearTooltipTimer()
+  }, [])
+
+  function clearTooltipTimer() {
+    if (tooltipTimerRef.current === null) return
+    window.clearTimeout(tooltipTimerRef.current)
+    tooltipTimerRef.current = null
+  }
+
   function runMenuAction(action: () => void) {
     setMenuPosition(null)
     action()
@@ -54,7 +68,34 @@ export default function ProjectTab({
   function openContextMenu(event: MouseEvent) {
     event.preventDefault()
     event.stopPropagation()
+    hideTooltip()
     setMenuPosition(getContextMenuPosition(event, { width: 164, height: 126 }))
+  }
+
+  function shouldShowTooltip() {
+    const label = labelRef.current
+    if (!label) return project.name.length > 16
+    return project.name.length > 16 || label.scrollWidth > label.clientWidth + 1
+  }
+
+  function scheduleTooltip() {
+    clearTooltipTimer()
+    setTooltipPosition(null)
+    if (!shouldShowTooltip()) return
+
+    tooltipTimerRef.current = window.setTimeout(() => {
+      const rect = tabRef.current?.getBoundingClientRect()
+      if (!rect) return
+      setTooltipPosition({
+        x: rect.left + rect.width / 2,
+        y: rect.bottom + 7,
+      })
+    }, 1100)
+  }
+
+  function hideTooltip() {
+    clearTooltipTimer()
+    setTooltipPosition(null)
   }
 
   function commitRename() {
@@ -97,8 +138,16 @@ export default function ProjectTab({
           onKeyDown={handleRenameKeyDown}
         />
       ) : (
-        <button className="projectTabButton" data-window-control title={project.name} onClick={onSelect}>
-          <span>{project.name}</span>
+        <button
+          className="projectTabButton"
+          data-window-control
+          onBlur={hideTooltip}
+          onClick={onSelect}
+          onFocus={scheduleTooltip}
+          onMouseEnter={scheduleTooltip}
+          onMouseLeave={hideTooltip}
+        >
+          <span ref={labelRef}>{project.name}</span>
         </button>
       )}
       <button
@@ -131,6 +180,17 @@ export default function ProjectTab({
           </button>
         </ContextMenu>
       )}
+      {tooltipPosition &&
+        createPortal(
+          <div
+            className="lightTooltip"
+            role="tooltip"
+            style={{ left: tooltipPosition.x, top: tooltipPosition.y }}
+          >
+            {project.name}
+          </div>,
+          document.body,
+        )}
     </div>
   )
 }

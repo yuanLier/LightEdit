@@ -154,6 +154,24 @@ describe('storage', () => {
     })
   })
 
+  it('accepts optional version names and rejects invalid version names', () => {
+    const state = appState()
+    const namedState = {
+      ...state,
+      versions: state.versions.map((item) =>
+        item.id === 'version-3' ? { ...item, name: 'Draft payload' } : item,
+      ),
+    }
+
+    expect(normalizeStoredState(namedState)?.versions[2].name).toBe('Draft payload')
+    expect(
+      normalizeStoredState({
+        ...state,
+        versions: [{ ...state.versions[0], name: 12 }],
+      }),
+    ).toBeNull()
+  })
+
   it('rejects states with duplicate ids or orphan versions', () => {
     const state = appState()
 

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import ProjectTab from './ProjectTab'
 import type { Project } from '../types'
@@ -11,9 +11,15 @@ const project: Project = {
   lastOpenedAt: 1,
 }
 
-function renderProjectTab({ renaming = false }: { renaming?: boolean } = {}) {
+function renderProjectTab({
+  renaming = false,
+  tabProject = project,
+}: {
+  renaming?: boolean
+  tabProject?: Project
+} = {}) {
   const props = {
-    project,
+    project: tabProject,
     active: true,
     renaming,
     onSelect: vi.fn(),
@@ -66,5 +72,22 @@ describe('ProjectTab', () => {
 
     expect(props.onRename).toHaveBeenCalledWith('Project Mercury')
     expect(props.onCancelRename).not.toHaveBeenCalled()
+  })
+
+  it('uses a LightEdit tooltip for long tab names', async () => {
+    vi.useFakeTimers()
+    try {
+      const longName = 'Test R en a a a a a a me'
+      renderProjectTab({ tabProject: { ...project, name: longName } })
+
+      fireEvent.mouseEnter(screen.getByRole('button', { name: longName }))
+      await act(async () => {
+        vi.advanceTimersByTime(1100)
+      })
+
+      expect(screen.getByRole('tooltip')).toHaveTextContent(longName)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })
