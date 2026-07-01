@@ -1,6 +1,7 @@
-import type { AppState, Project, Version } from './types'
+import type { AppState, Project, TextType, Version } from './types'
 
-const STORAGE_KEY = 'lightedit:v0.4:reference'
+export const STORAGE_KEY = 'lightedit:v0.4:reference'
+const TEXT_TYPES = new Set<TextType>(['text', 'sql', 'json'])
 
 const sampleJson = `{
   "project": "LightEdit",
@@ -74,17 +75,113 @@ export function createDefaultState(): AppState {
   }
 }
 
-function isState(value: unknown): value is AppState {
-  if (!value || typeof value !== 'object') return false
-  const state = value as AppState
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object'
+}
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value)
+}
+
+function isPositiveInteger(value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value > 0
+}
+
+function isProject(value: unknown): value is Project {
+  if (!isRecord(value)) return false
   return (
-    Array.isArray(state.projects) &&
-    Array.isArray(state.versions) &&
-    Array.isArray(state.openProjectIds) &&
-    typeof state.activeProjectId === 'string' &&
-    typeof state.activeVersionId === 'string' &&
-    typeof state.isPinned === 'boolean'
+    typeof value.id === 'string' &&
+    typeof value.name === 'string' &&
+    isFiniteNumber(value.createdAt) &&
+    isFiniteNumber(value.updatedAt) &&
+    isFiniteNumber(value.lastOpenedAt)
   )
+}
+
+function isVersion(value: unknown): value is Version {
+  if (!isRecord(value)) return false
+  return (
+    typeof value.id === 'string' &&
+    typeof value.projectId === 'string' &&
+    isPositiveInteger(value.versionIndex) &&
+    TEXT_TYPES.has(value.type as TextType) &&
+    typeof value.content === 'string' &&
+    typeof value.isStarred === 'boolean' &&
+    isFiniteNumber(value.createdAt) &&
+    isFiniteNumber(value.updatedAt)
+  )
+}
+
+function hasUniqueIds(items: Array<{ id: string }>) {
+  return new Set(items.map((item) => item.id)).size === items.length
+}
+
+function uniqueValidProjectIds(projectIds: unknown[], validProjectIds: Set<string>) {
+  const uniqueIds: string[] = []
+  for (const projectId of projectIds) {
+    if (
+      typeof projectId === 'string' &&
+      validProjectIds.has(projectId) &&
+      !uniqueIds.includes(projectId)
+    ) {
+      uniqueIds.push(projectId)
+    }
+  }
+  return uniqueIds
+}
+
+function latestVersionForProject(versions: Version[], projectId: string) {
+  return [...versions]
+    .filter((version) => version.projectId === projectId)
+    .sort((a, b) => b.versionIndex - a.versionIndex)[0]
+}
+
+export function normalizeStoredState(value: unknown): AppState | null {
+  if (!isRecord(value)) return null
+  if (!Array.isArray(value.projects) || !Array.isArray(value.versions)) return null
+
+  const projects = value.projects
+  const versions = value.versions
+  if (!projects.every(isProject) || !versions.every(isVersion)) return null
+  if (projects.length === 0 || versions.length === 0) return null
+  if (!hasUniqueIds(projects) || !hasUniqueIds(versions)) return null
+
+  const projectIds = new Set(projects.map((project) => project.id))
+  if (!versions.every((version) => projectIds.has(version.projectId))) return null
+  if (!projects.every((project) => latestVersionForProject(versions, project.id))) return null
+
+  const activeProjectId =
+    typeof value.activeProjectId === 'string' &&
+    projectIds.has(value.activeProjectId) &&
+    latestVersionForProject(versions, value.activeProjectId)
+      ? value.activeProjectId
+      : projects[0].id
+
+  const storedActiveVersion =
+    typeof value.activeVersionId === 'string'
+      ? versions.find(
+          (version) => version.id === value.activeVersionId && version.projectId === activeProjectId,
+        )
+      : undefined
+  const activeVersion = storedActiveVersion ?? latestVersionForProject(versions, activeProjectId)
+  if (!activeVersion) return null
+
+  const openProjectIds = uniqueValidProjectIds(
+    Array.isArray(value.openProjectIds) ? value.openProjectIds : [],
+    projectIds,
+  )
+  if (!openProjectIds.includes(activeProjectId)) {
+    openProjectIds.push(activeProjectId)
+  }
+
+  return {
+    projects,
+    versions,
+    openProjectIds,
+    activeProjectId,
+    activeVersionId: activeVersion.id,
+    isPinned: typeof value.isPinned === 'boolean' ? value.isPinned : false,
+  }
 }
 
 export function loadState(): AppState | null {
@@ -92,7 +189,7 @@ export function loadState(): AppState | null {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return null
     const parsed = JSON.parse(raw)
-    return isState(parsed) ? parsed : null
+    return normalizeStoredState(parsed)
   } catch {
     return null
   }
