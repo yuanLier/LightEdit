@@ -692,6 +692,7 @@ button {
   font-size: 14px;
   line-height: var(--editor-line-height);
   letter-spacing: 0;
+  font-variant-ligatures: none;
   tab-size: 2;
   white-space: pre;
 }
@@ -699,7 +700,9 @@ button {
 .syntaxLayer {
   position: absolute;
   inset: 0;
-  min-width: max-content;
+  width: 100%;
+  min-width: 100%;
+  overflow: hidden;
   color: #3f4a52;
   pointer-events: none;
 }

@@ -1,3 +1,12 @@
+import { useLayoutEffect, useRef, type KeyboardEvent } from 'react'
+import {
+  applyTabEdit,
+  getEditorContentWidth,
+  getEditorHeight,
+  getEditorLineCount,
+  highlightedContent,
+  type EditorSelection,
+} from '../editorModel'
 import type { TextType } from '../types'
 
 type EditorPaneProps = {
@@ -6,48 +15,35 @@ type EditorPaneProps = {
   onChange: (content: string) => void
 }
 
-function escapeHtml(value: string) {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-}
-
-function highlightJson(value: string) {
-  const escaped = escapeHtml(value)
-  return escaped.replace(
-    /(?:"(?:\\u[\da-fA-F]{4}|\\[^u]|[^\\"])*"(?=\s*:)|"(?:\\u[\da-fA-F]{4}|\\[^u]|[^\\"])*"|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?|\btrue\b|\bfalse\b|\bnull\b)/g,
-    (token, offset: number) => {
-      let className = 'tokenNumber'
-      if (token.startsWith('"')) {
-        const afterToken = escaped.slice(offset + token.length)
-        className = /^\s*:/.test(afterToken) ? 'tokenKey' : 'tokenString'
-      }
-      if (token === 'true' || token === 'false') className = 'tokenBoolean'
-      if (token === 'null') className = 'tokenNull'
-      return `<span class="${className}">${token}</span>`
-    },
-  )
-}
-
-function highlightSql(value: string) {
-  const escaped = escapeHtml(value)
-  return escaped.replace(
-    /\b(SELECT|FROM|WHERE|GROUP BY|ORDER BY|HAVING|LIMIT|INNER|LEFT|RIGHT|FULL|JOIN|ON|AND|OR|AS|INSERT|UPDATE|DELETE|VALUES|SET|CREATE|TABLE|ALTER|DROP|CASE|WHEN|THEN|ELSE|END)\b/gi,
-    '<span class="tokenKey">$1</span>',
-  )
-}
-
-function highlightedContent(type: TextType, content: string) {
-  if (type === 'json') return highlightJson(content)
-  if (type === 'sql') return highlightSql(content)
-  return escapeHtml(content)
-}
-
 export default function EditorPane({ type, content, onChange }: EditorPaneProps) {
-  const lines = content.split('\n')
-  const lineCount = Math.max(lines.length, 16)
-  const textHeight = `calc(${lineCount} * var(--editor-line-height) + 44px)`
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const pendingSelectionRef = useRef<EditorSelection | null>(null)
+  const lineCount = getEditorLineCount(content)
+  const textHeight = getEditorHeight(content)
+  const contentWidth = getEditorContentWidth(content)
+
+  useLayoutEffect(() => {
+    const pendingSelection = pendingSelectionRef.current
+    if (!pendingSelection) return
+
+    pendingSelectionRef.current = null
+    textareaRef.current?.setSelectionRange(pendingSelection.selectionStart, pendingSelection.selectionEnd)
+  }, [content])
+
+  function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
+    if (event.key !== 'Tab' || event.altKey || event.ctrlKey || event.metaKey || event.nativeEvent.isComposing) {
+      return
+    }
+
+    event.preventDefault()
+    const textarea = event.currentTarget
+    const next = applyTabEdit(textarea.value, textarea.selectionStart, textarea.selectionEnd, event.shiftKey)
+    pendingSelectionRef.current = {
+      selectionStart: next.selectionStart,
+      selectionEnd: next.selectionEnd,
+    }
+    onChange(next.value)
+  }
 
   return (
     <div className="editorPane">
@@ -56,19 +52,26 @@ export default function EditorPane({ type, content, onChange }: EditorPaneProps)
           <span key={index}>{index + 1}</span>
         ))}
       </div>
-      <div className="codeSurface" style={{ minHeight: textHeight }}>
+      <div className="codeSurface" style={{ minHeight: textHeight, minWidth: contentWidth }}>
         <pre
           className="syntaxLayer"
           aria-hidden="true"
           dangerouslySetInnerHTML={{ __html: highlightedContent(type, content) || ' ' }}
         />
         <textarea
+          ref={textareaRef}
           className="codeInput"
           value={content}
           onChange={(event) => onChange(event.target.value)}
+          onKeyDown={handleKeyDown}
           spellCheck={false}
+          autoCapitalize="off"
+          autoComplete="off"
+          autoCorrect="off"
+          wrap="off"
           style={{ height: textHeight }}
           aria-label="Editor"
+          aria-multiline="true"
         />
       </div>
     </div>
