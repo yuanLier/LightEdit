@@ -99,6 +99,7 @@ button {
   background: var(--chrome);
   user-select: none;
   -webkit-user-select: none;
+  -webkit-app-region: drag;
 }
 
 .topBar *,
@@ -107,19 +108,13 @@ button {
   -webkit-user-select: none;
 }
 
-.windowDragLayer {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  -webkit-app-region: drag;
-}
-
 .notesSlot {
   position: relative;
   z-index: 1;
   align-self: stretch;
   flex: 0 0 var(--safe-area-width);
   pointer-events: none;
+  -webkit-app-region: drag;
 }
 
 .notesMenu {
@@ -198,6 +193,7 @@ button {
   overflow-x: auto;
   pointer-events: none;
   scrollbar-width: none;
+  -webkit-app-region: drag;
 }
 
 .tabsViewport::-webkit-scrollbar {
@@ -210,6 +206,7 @@ button {
   height: 100%;
   min-width: min-content;
   pointer-events: none;
+  -webkit-app-region: drag;
 }
 
 .projectTab {
@@ -228,6 +225,7 @@ button {
     background 120ms ease,
     box-shadow 120ms ease;
   pointer-events: auto;
+  -webkit-app-region: drag;
 }
 
 .projectTab.active {
@@ -275,9 +273,11 @@ button {
 .projectTabButton {
   display: flex;
   align-items: center;
-  width: 100%;
+  align-self: stretch;
+  width: auto;
+  max-width: calc(100% - 38px);
   min-width: 0;
-  padding: 0 34px 0 22px;
+  padding: 0 8px 0 22px;
   border: 0;
   border-radius: inherit;
   background: transparent;
@@ -299,11 +299,11 @@ button {
   white-space: nowrap;
 }
 
-.projectTab:hover,
-.projectTabButton:hover {
+.projectTab:hover {
   background: var(--hover-soft);
 }
 
+.projectTabButton:hover,
 .projectTab.active .projectTabButton:hover {
   background: transparent;
 }
@@ -325,7 +325,8 @@ button {
 }
 
 [data-window-control],
-.notesMenu {
+.notesMenu,
+.notesMenu * {
   -webkit-app-region: no-drag;
 }
 
@@ -391,6 +392,7 @@ button {
   display: grid;
   place-items: center;
   flex: 0 0 92px;
+  -webkit-app-region: drag;
 }
 
 .notesMenuButton {

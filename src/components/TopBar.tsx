@@ -48,11 +48,10 @@ export default function TopBar({
   }, [notesOpen, onCloseNotes])
 
   return (
-    <header className="topBar">
-      <div className="windowDragLayer" data-tauri-drag-region aria-hidden="true" />
+    <header className="topBar" data-tauri-drag-region>
       <div className="notesSlot" aria-hidden="true" />
-      <div className="tabsViewport">
-        <div className="tabsTrack">
+      <div className="tabsViewport" data-tauri-drag-region>
+        <div className="tabsTrack" data-tauri-drag-region>
           {openProjects.map((project) => (
             <ProjectTab
               key={project.id}

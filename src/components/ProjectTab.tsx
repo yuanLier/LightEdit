@@ -23,7 +23,7 @@ export default function ProjectTab({
   }, [active])
 
   return (
-    <div ref={tabRef} className={`projectTab ${active ? 'active' : ''}`}>
+    <div ref={tabRef} className={`projectTab ${active ? 'active' : ''}`} data-tauri-drag-region>
       <button className="projectTabButton" data-window-control title={project.name} onClick={onSelect}>
         <span>{project.name}</span>
       </button>
