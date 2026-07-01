@@ -74,6 +74,7 @@ function neighborProjectId(state: AppState, deletedProjectId: string, remainingP
 export default function App() {
   const [state, setState] = useState<AppState>(() => loadState() ?? createDefaultState())
   const [notesOpen, setNotesOpen] = useState(false)
+  const [renamingProjectId, setRenamingProjectId] = useState<string | null>(null)
   const [toast, setToast] = useState<ToastState | null>(null)
 
   const activeProject = state.projects.find((project) => project.id === state.activeProjectId)
@@ -187,6 +188,63 @@ export default function App() {
     setNotesOpen(false)
   }
 
+  function renameProject(projectId: string, name: string) {
+    const project = state.projects.find((candidate) => candidate.id === projectId)
+    if (!project) return
+
+    const nextName = name.trim()
+    if (!nextName) return
+    setRenamingProjectId(null)
+    if (nextName === project.name) return
+
+    setState((current) => ({
+      ...current,
+      projects: current.projects.map((candidate) =>
+        candidate.id === projectId
+          ? { ...candidate, name: nextName, updatedAt: Date.now() }
+          : candidate,
+      ),
+    }))
+    showToast(`Renamed to ${nextName}`)
+  }
+
+  function closeProjectTab(projectId: string) {
+    const visibleOpenProjectIds = state.openProjectIds.filter((id) => projectExists(state.projects, id))
+    if (!visibleOpenProjectIds.includes(projectId)) return
+    if (visibleOpenProjectIds.length <= 1) {
+      showToast('Keep one tab open')
+      return
+    }
+
+    setState((current) => {
+      if (!current.openProjectIds.includes(projectId)) return current
+      if (current.openProjectIds.length <= 1) {
+        return current
+      }
+
+      const openOrder = current.openProjectIds.filter((id) => projectExists(current.projects, id))
+      const closedIndex = openOrder.indexOf(projectId)
+      const nextOpenProjectIds = openOrder.filter((id) => id !== projectId)
+
+      if (current.activeProjectId !== projectId) {
+        return { ...current, openProjectIds: nextOpenProjectIds }
+      }
+
+      const nextActiveProjectId =
+        nextOpenProjectIds[closedIndex] ?? nextOpenProjectIds[closedIndex - 1] ?? nextOpenProjectIds[0]
+      const nextVersion = firstVersionForProject(current, nextActiveProjectId)
+      if (!nextVersion) return current
+
+      return {
+        ...current,
+        openProjectIds: nextOpenProjectIds,
+        activeProjectId: nextActiveProjectId,
+        activeVersionId: nextVersion.id,
+      }
+    })
+    setRenamingProjectId((current) => (current === projectId ? null : current))
+  }
+
   function deleteProject(projectId: string) {
     const project = state.projects.find((candidate) => candidate.id === projectId)
     if (!project) return
@@ -244,6 +302,7 @@ export default function App() {
       }
     })
     setNotesOpen(false)
+    setRenamingProjectId((current) => (current === projectId ? null : current))
     showToast(`Deleted ${project.name}`)
   }
 
@@ -344,12 +403,17 @@ export default function App() {
           projects={state.projects}
           openProjects={openProjects}
           activeProjectId={state.activeProjectId}
+          renamingProjectId={renamingProjectId}
           isPinned={state.isPinned}
           notesOpen={notesOpen}
           onToggleNotes={() => setNotesOpen((open) => !open)}
           onCloseNotes={() => setNotesOpen(false)}
           onOpenProject={openProject}
           onAddProject={addProject}
+          onStartRenameProject={setRenamingProjectId}
+          onRenameProject={renameProject}
+          onCancelRenameProject={() => setRenamingProjectId(null)}
+          onCloseProject={closeProjectTab}
           onDeleteProject={deleteProject}
           onTogglePin={() => setState((current) => ({ ...current, isPinned: !current.isPinned }))}
         />

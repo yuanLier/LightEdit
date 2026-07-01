@@ -131,6 +131,56 @@ button {
     0 3px 8px rgba(67, 45, 20, 0.08);
 }
 
+.tabContextMenu {
+  position: fixed;
+  z-index: 30;
+  width: 164px;
+  padding: 6px;
+  border: 1px solid rgba(225, 212, 194, 0.94);
+  border-radius: 8px;
+  background: rgba(255, 253, 248, 0.98);
+  box-shadow:
+    0 16px 34px rgba(67, 45, 20, 0.12),
+    0 2px 7px rgba(67, 45, 20, 0.08);
+  -webkit-app-region: no-drag;
+}
+
+.tabContextMenu button {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 30px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 6px;
+  color: #4b453e;
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.78rem;
+  text-align: left;
+  -webkit-app-region: no-drag;
+}
+
+.tabContextMenu button:hover {
+  color: var(--text);
+  background: var(--hover-active);
+}
+
+.tabContextMenu button.danger {
+  color: #8f554a;
+}
+
+.tabContextMenu button.danger:hover {
+  color: #71382f;
+  background: rgba(178, 88, 64, 0.08);
+}
+
+.tabContextSeparator {
+  height: 1px;
+  margin: 5px 4px;
+  background: var(--line-soft);
+}
+
 .notesMenuList {
   max-height: 256px;
   overflow: auto;
@@ -299,6 +349,28 @@ button {
   white-space: nowrap;
 }
 
+.projectTabRename {
+  align-self: center;
+  width: calc(100% - 50px);
+  min-width: 0;
+  height: 30px;
+  margin-left: 14px;
+  padding: 0 8px;
+  border: 1px solid rgba(239, 161, 26, 0.24);
+  border-radius: 7px;
+  outline: 0;
+  color: var(--text);
+  background: rgba(255, 253, 248, 0.9);
+  font-size: inherit;
+  font-weight: 480;
+  -webkit-app-region: no-drag;
+}
+
+.projectTabRename:focus {
+  border-color: rgba(239, 161, 26, 0.42);
+  box-shadow: 0 0 0 2px rgba(239, 161, 26, 0.1);
+}
+
 .projectTab:hover {
   background: var(--hover-soft);
 }
@@ -311,6 +383,7 @@ button {
 .iconButton,
 .addProjectButton,
 .projectTabButton,
+.projectTabRename,
 .notesMenuButton,
 .pinButton,
 .toolbarAction,
@@ -326,7 +399,9 @@ button {
 
 [data-window-control],
 .notesMenu,
-.notesMenu * {
+.notesMenu *,
+.tabContextMenu,
+.tabContextMenu * {
   -webkit-app-region: no-drag;
 }
 

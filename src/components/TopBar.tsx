@@ -8,12 +8,17 @@ type TopBarProps = {
   projects: Project[]
   openProjects: Project[]
   activeProjectId: string
+  renamingProjectId: string | null
   isPinned: boolean
   notesOpen: boolean
   onToggleNotes: () => void
   onCloseNotes: () => void
   onOpenProject: (projectId: string) => void
   onAddProject: () => void
+  onStartRenameProject: (projectId: string) => void
+  onRenameProject: (projectId: string, name: string) => void
+  onCancelRenameProject: () => void
+  onCloseProject: (projectId: string) => void
   onDeleteProject: (projectId: string) => void
   onTogglePin: () => void
 }
@@ -22,12 +27,17 @@ export default function TopBar({
   projects,
   openProjects,
   activeProjectId,
+  renamingProjectId,
   isPinned,
   notesOpen,
   onToggleNotes,
   onCloseNotes,
   onOpenProject,
   onAddProject,
+  onStartRenameProject,
+  onRenameProject,
+  onCancelRenameProject,
+  onCloseProject,
   onDeleteProject,
   onTogglePin,
 }: TopBarProps) {
@@ -57,7 +67,12 @@ export default function TopBar({
               key={project.id}
               project={project}
               active={project.id === activeProjectId}
+              renaming={project.id === renamingProjectId}
               onSelect={() => onOpenProject(project.id)}
+              onStartRename={() => onStartRenameProject(project.id)}
+              onRename={(name) => onRenameProject(project.id, name)}
+              onCancelRename={onCancelRenameProject}
+              onClose={() => onCloseProject(project.id)}
               onDelete={() => onDeleteProject(project.id)}
             />
           ))}
