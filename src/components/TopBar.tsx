@@ -103,6 +103,8 @@ export default function TopBar({
             projects={projects}
             activeProjectId={activeProjectId}
             onOpenProject={onOpenProject}
+            onRenameProject={onRenameProject}
+            onDeleteProject={onDeleteProject}
             onNewProject={onAddProject}
           />
         )}

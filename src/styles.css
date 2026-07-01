@@ -131,7 +131,7 @@ button {
     0 3px 8px rgba(67, 45, 20, 0.08);
 }
 
-.tabContextMenu {
+.contextMenu {
   position: fixed;
   z-index: 30;
   width: 164px;
@@ -145,7 +145,7 @@ button {
   -webkit-app-region: no-drag;
 }
 
-.tabContextMenu button {
+.contextMenu button {
   display: flex;
   align-items: center;
   width: 100%;
@@ -161,21 +161,37 @@ button {
   -webkit-app-region: no-drag;
 }
 
-.tabContextMenu button:hover {
+.contextMenu button:hover {
   color: var(--text);
   background: var(--hover-active);
 }
 
-.tabContextMenu button.danger {
+.contextMenu button:disabled {
+  color: var(--muted-2);
+  cursor: default;
+}
+
+.contextMenu button:disabled:hover {
+  color: var(--muted-2);
+  background: transparent;
+}
+
+.contextMenu button.danger {
   color: #8f554a;
 }
 
-.tabContextMenu button.danger:hover {
+.contextMenu button.danger:hover {
   color: #71382f;
   background: rgba(178, 88, 64, 0.08);
 }
 
-.tabContextSeparator {
+.contextMenu button.danger:disabled,
+.contextMenu button.danger:disabled:hover {
+  color: var(--muted-2);
+  background: transparent;
+}
+
+.contextMenuSeparator {
   height: 1px;
   margin: 5px 4px;
   background: var(--line-soft);
@@ -219,6 +235,30 @@ button {
 .notesMenuItem small {
   color: var(--muted);
   font-size: 0.76rem;
+}
+
+.notesMenuItemEditing {
+  cursor: default;
+}
+
+.notesMenuRename {
+  width: 100%;
+  min-width: 0;
+  height: 28px;
+  padding: 0 7px;
+  border: 1px solid rgba(239, 161, 26, 0.22);
+  border-radius: 6px;
+  outline: 0;
+  color: var(--text);
+  background: rgba(255, 255, 253, 0.88);
+  font-size: 0.88rem;
+  font-weight: 430;
+  -webkit-app-region: no-drag;
+}
+
+.notesMenuRename:focus {
+  border-color: rgba(239, 161, 26, 0.42);
+  box-shadow: 0 0 0 2px rgba(239, 161, 26, 0.1);
 }
 
 .notesNewProject {
@@ -406,8 +446,8 @@ button {
 [data-window-control],
 .notesMenu,
 .notesMenu *,
-.tabContextMenu,
-.tabContextMenu * {
+.contextMenu,
+.contextMenu * {
   -webkit-app-region: no-drag;
 }
 

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent as ReactKeyboardEvent, MouseEvent } from 'react'
 import { X } from 'lucide-react'
 import type { Project } from '../types'
+import ContextMenu, { getContextMenuPosition } from './ContextMenu'
 
 type ProjectTabProps = {
   project: Project
@@ -27,7 +28,6 @@ export default function ProjectTab({
   onDelete,
 }: ProjectTabProps) {
   const tabRef = useRef<HTMLDivElement>(null)
-  const menuRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const [draftName, setDraftName] = useState(project.name)
   const [menuPosition, setMenuPosition] = useState<{ x: number; y: number } | null>(null)
@@ -46,27 +46,6 @@ export default function ProjectTab({
     })
   }, [project.name, renaming])
 
-  useEffect(() => {
-    if (!menuPosition) return
-
-    function closeMenu(event: PointerEvent) {
-      const target = event.target
-      if (target instanceof Node && menuRef.current?.contains(target)) return
-      setMenuPosition(null)
-    }
-
-    function closeOnEscape(event: globalThis.KeyboardEvent) {
-      if (event.key === 'Escape') setMenuPosition(null)
-    }
-
-    document.addEventListener('pointerdown', closeMenu, true)
-    document.addEventListener('keydown', closeOnEscape)
-    return () => {
-      document.removeEventListener('pointerdown', closeMenu, true)
-      document.removeEventListener('keydown', closeOnEscape)
-    }
-  }, [menuPosition])
-
   function runMenuAction(action: () => void) {
     setMenuPosition(null)
     action()
@@ -75,12 +54,7 @@ export default function ProjectTab({
   function openContextMenu(event: MouseEvent) {
     event.preventDefault()
     event.stopPropagation()
-    const menuWidth = 164
-    const menuHeight = 126
-    setMenuPosition({
-      x: Math.max(8, Math.min(event.clientX, window.innerWidth - menuWidth - 8)),
-      y: Math.max(8, Math.min(event.clientY, window.innerHeight - menuHeight - 8)),
-    })
+    setMenuPosition(getContextMenuPosition(event, { width: 164, height: 126 }))
   }
 
   function commitRename() {
@@ -140,21 +114,14 @@ export default function ProjectTab({
         <X size={15} strokeWidth={1.7} />
       </button>
       {menuPosition && (
-        <div
-          ref={menuRef}
-          className="tabContextMenu"
-          role="menu"
-          style={{ left: menuPosition.x, top: menuPosition.y }}
-          data-window-control
-          onContextMenu={(event) => event.preventDefault()}
-        >
+        <ContextMenu position={menuPosition} onClose={() => setMenuPosition(null)}>
           <button role="menuitem" onClick={() => runMenuAction(onStartRename)}>
             Rename Project
           </button>
           <button role="menuitem" onClick={() => runMenuAction(onClose)}>
             Close Tab
           </button>
-          <div className="tabContextSeparator" />
+          <div className="contextMenuSeparator" />
           <button
             className="danger"
             role="menuitem"
@@ -162,7 +129,7 @@ export default function ProjectTab({
           >
             Delete Project...
           </button>
-        </div>
+        </ContextMenu>
       )}
     </div>
   )
