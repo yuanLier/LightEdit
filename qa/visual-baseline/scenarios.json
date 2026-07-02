@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "viewport": {
+    "width": 800,
+    "height": 560
+  },
+  "recommendedOutputDir": "harness/visual-baselines/YYYY-MM-DD",
+  "scenarios": [
+    {
+      "id": "default-editor",
+      "file": "01-default-editor.png",
+      "title": "Default editor",
+      "setup": [
+        "Open LightEdit at 800x560.",
+        "Use Project 2 as active tab.",
+        "Use JSON as active version type."
+      ],
+      "checkpoints": [
+        "macOS traffic lights do not collide with tabs.",
+        "Active tab is soft and visually connected with the editor area.",
+        "Inactive tab text is lighter than active tab text.",
+        "Version rail aligns with the top of the editor column.",
+        "Line numbers and editor text keep the expected compact spacing.",
+        "Toolbar labels and icons stay quiet and readable."
+      ]
+    },
+    {
+      "id": "notes-menu",
+      "file": "02-notes-menu.png",
+      "title": "Notes menu open",
+      "setup": [
+        "Click the Notes control in the top bar.",
+        "Keep the active project visible in the menu."
+      ],
+      "checkpoints": [
+        "Menu uses the same warm white surface and rounded corners as the app.",
+        "Active project row is visible without feeling heavy.",
+        "New Project action is separated but not visually loud.",
+        "Menu shadow is soft and does not look like a system default popup."
+      ]
+    },
+    {
+      "id": "project-context-menu",
+      "file": "03-project-context-menu.png",
+      "title": "Project context menu",
+      "setup": [
+        "Right-click the active Project tab.",
+        "Keep Rename Project, Close Tab, and Delete Project visible."
+      ],
+      "checkpoints": [
+        "Context menu matches LightEdit surface style.",
+        "Danger action is separated and lower emphasis until hovered.",
+        "No WebView default Reload or Inspect Element menu appears."
+      ]
+    },
+    {
+      "id": "long-name-tooltip",
+      "file": "04-long-name-tooltip.png",
+      "title": "Long name tooltip",
+      "setup": [
+        "Rename a project or version to a long name.",
+        "Hover the truncated label for about 0.8s."
+      ],
+      "checkpoints": [
+        "Tooltip uses the custom LightEdit style instead of a native gray title bubble.",
+        "Tooltip appears quickly enough for daily use but not instantly on pass-through hover.",
+        "Tooltip does not cover the close button or primary label."
+      ]
+    }
+  ]
+}
