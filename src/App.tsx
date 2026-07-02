@@ -402,17 +402,11 @@ export default function App() {
 
   function formatCurrent() {
     if (!activeVersion) return
-    if (activeVersion.type === 'text') {
-      showToast('Text has no formatter')
-      return
+    const result = formatContent(activeVersion.type, activeVersion.content)
+    if (result.status === 'formatted') {
+      updateActiveVersion({ content: result.content })
     }
-
-    try {
-      updateActiveVersion({ content: formatContent(activeVersion.type, activeVersion.content) })
-      showToast(activeVersion.type === 'json' ? 'JSON formatted' : 'SQL formatted')
-    } catch {
-      showToast(activeVersion.type === 'json' ? 'Invalid JSON' : 'Format failed')
-    }
+    showToast(result.message)
   }
 
   if (!activeProject || !activeVersion) {
