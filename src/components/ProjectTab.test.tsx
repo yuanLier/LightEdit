@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import ProjectTab from './ProjectTab'
 import type { Project } from '../types'
+import { LIGHT_TOOLTIP_DELAY_MS } from '../uiTimings'
 
 const project: Project = {
   id: 'project-1',
@@ -82,7 +83,7 @@ describe('ProjectTab', () => {
 
       fireEvent.mouseEnter(screen.getByRole('button', { name: longName }))
       await act(async () => {
-        vi.advanceTimersByTime(1100)
+        vi.advanceTimersByTime(LIGHT_TOOLTIP_DELAY_MS)
       })
 
       expect(screen.getByRole('tooltip')).toHaveTextContent(longName)

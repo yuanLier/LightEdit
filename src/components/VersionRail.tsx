@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent as ReactKeyboardEvent, MouseEvent } from 'react'
-import { X } from 'lucide-react'
+import { createPortal } from 'react-dom'
 import type { Version } from '../types'
+import { LIGHT_TOOLTIP_DELAY_MS } from '../uiTimings'
 import { versionLabel } from '../versionLabel'
 import ContextMenu, { getContextMenuPosition } from './ContextMenu'
 
@@ -23,10 +24,12 @@ export default function VersionRail({
   const canDelete = versions.length > 1
   const activeRowRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const tooltipTimerRef = useRef<number | null>(null)
   const [contextVersionId, setContextVersionId] = useState<string | null>(null)
   const [menuPosition, setMenuPosition] = useState<{ x: number; y: number } | null>(null)
   const [renamingVersionId, setRenamingVersionId] = useState<string | null>(null)
   const [draftName, setDraftName] = useState('')
+  const [tooltip, setTooltip] = useState<{ x: number; y: number; label: string } | null>(null)
   const contextVersion = versions.find((version) => version.id === contextVersionId)
 
   useEffect(() => {
@@ -41,11 +44,22 @@ export default function VersionRail({
     })
   }, [renamingVersionId])
 
+  useEffect(() => {
+    return () => clearTooltipTimer()
+  }, [])
+
+  function clearTooltipTimer() {
+    if (tooltipTimerRef.current === null) return
+    window.clearTimeout(tooltipTimerRef.current)
+    tooltipTimerRef.current = null
+  }
+
   function openContextMenu(event: MouseEvent, versionId: string) {
     event.preventDefault()
     event.stopPropagation()
+    hideTooltip()
     setContextVersionId(versionId)
-    setMenuPosition(getContextMenuPosition(event, { width: 164, height: 44 }))
+    setMenuPosition(getContextMenuPosition(event, { width: 164, height: 84 }))
   }
 
   function runMenuAction(action: () => void) {
@@ -56,6 +70,33 @@ export default function VersionRail({
   function startRename(version: Version) {
     setDraftName(versionLabel(version))
     setRenamingVersionId(version.id)
+  }
+
+  function shouldShowTooltip(label: string, target: HTMLElement) {
+    const textNode = target.querySelector('span')
+    if (label.length > 8) return true
+    return textNode instanceof HTMLElement && textNode.scrollWidth > textNode.clientWidth + 1
+  }
+
+  function scheduleTooltip(target: HTMLElement, label: string) {
+    clearTooltipTimer()
+    setTooltip(null)
+    if (!shouldShowTooltip(label, target)) return
+
+    tooltipTimerRef.current = window.setTimeout(() => {
+      if (!target.isConnected) return
+      const rect = target.getBoundingClientRect()
+      setTooltip({
+        x: rect.left + rect.width / 2,
+        y: rect.bottom + 7,
+        label,
+      })
+    }, LIGHT_TOOLTIP_DELAY_MS)
+  }
+
+  function hideTooltip() {
+    clearTooltipTimer()
+    setTooltip(null)
   }
 
   function commitRename(version: Version) {
@@ -109,21 +150,18 @@ export default function VersionRail({
                 />
               </div>
             ) : (
-              <button className="versionSelect" onClick={() => onSelectVersion(version.id)}>
-                <span>{label}</span>
-              </button>
-            )}
-            {canDelete && (
               <button
-                className="iconButton versionDelete"
-                aria-label={`Delete ${label}`}
-                title={`Delete ${label}`}
-                onClick={(event) => {
-                  event.stopPropagation()
-                  onDeleteVersion(version.id)
+                className="versionSelect"
+                onBlur={hideTooltip}
+                onClick={() => {
+                  hideTooltip()
+                  onSelectVersion(version.id)
                 }}
+                onFocus={(event) => scheduleTooltip(event.currentTarget, label)}
+                onMouseEnter={(event) => scheduleTooltip(event.currentTarget, label)}
+                onMouseLeave={hideTooltip}
               >
-                <X size={16} strokeWidth={1.7} />
+                <span>{label}</span>
               </button>
             )}
           </div>
@@ -134,8 +172,24 @@ export default function VersionRail({
           <button role="menuitem" onClick={() => runMenuAction(() => startRename(contextVersion))}>
             Rename Version
           </button>
+          <div className="contextMenuSeparator" />
+          <button
+            className="danger"
+            role="menuitem"
+            disabled={!canDelete}
+            onClick={() => runMenuAction(() => onDeleteVersion(contextVersion.id))}
+          >
+            Delete Version...
+          </button>
         </ContextMenu>
       )}
+      {tooltip &&
+        createPortal(
+          <div className="lightTooltip" role="tooltip" style={{ left: tooltip.x, top: tooltip.y }}>
+            {tooltip.label}
+          </div>,
+          document.body,
+        )}
     </aside>
   )
 }

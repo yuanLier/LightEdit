@@ -493,8 +493,7 @@ button {
   opacity: 0.72;
 }
 
-.tabClose:hover,
-.versionDelete:hover {
+.tabClose:hover {
   color: #786f62;
   background: rgba(219, 203, 176, 0.18);
 }
@@ -634,7 +633,7 @@ button {
   width: 100%;
   height: 100%;
   min-height: inherit;
-  padding: 0 28px 0 24px;
+  padding: 0 18px 0 24px;
   border: 0;
   background: transparent;
   cursor: pointer;
@@ -669,7 +668,7 @@ button {
   align-items: center;
   width: 100%;
   min-height: inherit;
-  padding: 0 28px 0 18px;
+  padding: 0 18px;
 }
 
 .versionRename {
@@ -689,27 +688,6 @@ button {
 .versionRename:focus {
   border-color: rgba(239, 161, 26, 0.42);
   box-shadow: 0 0 0 2px rgba(239, 161, 26, 0.1);
-}
-
-.versionDelete {
-  position: absolute;
-  top: 50%;
-  right: 8px;
-  width: 24px;
-  height: 24px;
-  transform: translateY(-50%);
-  border-radius: 50%;
-  color: var(--muted-2);
-  opacity: 0;
-  transition:
-    color 120ms ease,
-    opacity 120ms ease,
-    background 120ms ease;
-}
-
-.versionRow.active .versionDelete,
-.versionRow:hover .versionDelete {
-  opacity: 0.72;
 }
 
 .editorColumn {

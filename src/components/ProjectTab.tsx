@@ -3,6 +3,7 @@ import type { KeyboardEvent as ReactKeyboardEvent, MouseEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 import type { Project } from '../types'
+import { LIGHT_TOOLTIP_DELAY_MS } from '../uiTimings'
 import ContextMenu, { getContextMenuPosition } from './ContextMenu'
 
 type ProjectTabProps = {
@@ -90,7 +91,7 @@ export default function ProjectTab({
         x: rect.left + rect.width / 2,
         y: rect.bottom + 7,
       })
-    }, 1100)
+    }, LIGHT_TOOLTIP_DELAY_MS)
   }
 
   function hideTooltip() {

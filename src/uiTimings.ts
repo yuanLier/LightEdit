@@ -1,0 +1,1 @@
+export const LIGHT_TOOLTIP_DELAY_MS = 800
