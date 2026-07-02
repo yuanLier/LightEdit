@@ -1,7 +1,8 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import NotesMenu from './NotesMenu'
 import type { Project } from '../types'
+import { LIGHT_TOOLTIP_DELAY_MS } from '../uiTimings'
 
 const projects: Project[] = [
   {
@@ -20,9 +21,9 @@ const projects: Project[] = [
   },
 ]
 
-function renderNotesMenu() {
+function renderNotesMenu(customProjects = projects) {
   const props = {
-    projects,
+    projects: customProjects,
     activeProjectId: 'project-1',
     onOpenProject: vi.fn(),
     onRenameProject: vi.fn(),
@@ -62,5 +63,22 @@ describe('NotesMenu', () => {
     fireEvent.keyDown(input, { key: 'Enter' })
 
     expect(props.onRenameProject).toHaveBeenCalledWith('project-1', 'Renamed API')
+  })
+
+  it('uses a LightEdit tooltip for long project names in the Notes menu', async () => {
+    vi.useFakeTimers()
+    try {
+      const longName = 'Test R en a a a a a a me'
+      renderNotesMenu([{ ...projects[0], name: longName }])
+
+      fireEvent.mouseEnter(screen.getByRole('menuitem', { name: new RegExp(longName) }))
+      await act(async () => {
+        vi.advanceTimersByTime(LIGHT_TOOLTIP_DELAY_MS)
+      })
+
+      expect(screen.getByRole('tooltip')).toHaveTextContent(longName)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

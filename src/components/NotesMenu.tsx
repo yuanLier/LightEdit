@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent as ReactKeyboardEvent, MouseEvent } from 'react'
+import { createPortal } from 'react-dom'
 import { Plus } from 'lucide-react'
 import type { Project } from '../types'
+import { LIGHT_TOOLTIP_DELAY_MS } from '../uiTimings'
 import ContextMenu, { getContextMenuPosition } from './ContextMenu'
 
 type NotesMenuProps = {
@@ -22,10 +24,12 @@ export default function NotesMenu({
   onNewProject,
 }: NotesMenuProps) {
   const inputRef = useRef<HTMLInputElement>(null)
+  const tooltipTimerRef = useRef<number | null>(null)
   const [contextProjectId, setContextProjectId] = useState<string | null>(null)
   const [menuPosition, setMenuPosition] = useState<{ x: number; y: number } | null>(null)
   const [renamingProjectId, setRenamingProjectId] = useState<string | null>(null)
   const [draftName, setDraftName] = useState('')
+  const [tooltip, setTooltip] = useState<{ x: number; y: number; label: string } | null>(null)
 
   const contextProject = projects.find((project) => project.id === contextProjectId)
 
@@ -37,9 +41,20 @@ export default function NotesMenu({
     })
   }, [renamingProjectId])
 
+  useEffect(() => {
+    return () => clearTooltipTimer()
+  }, [])
+
+  function clearTooltipTimer() {
+    if (tooltipTimerRef.current === null) return
+    window.clearTimeout(tooltipTimerRef.current)
+    tooltipTimerRef.current = null
+  }
+
   function openContextMenu(event: MouseEvent, projectId: string) {
     event.preventDefault()
     event.stopPropagation()
+    hideTooltip()
     setContextProjectId(projectId)
     setMenuPosition(getContextMenuPosition(event, { width: 164, height: 126 }))
   }
@@ -50,8 +65,36 @@ export default function NotesMenu({
   }
 
   function startRename(project: Project) {
+    hideTooltip()
     setDraftName(project.name)
     setRenamingProjectId(project.id)
+  }
+
+  function shouldShowTooltip(label: string, target: HTMLElement) {
+    const labelNode = target.querySelector('span')
+    if (label.length > 16) return true
+    return labelNode instanceof HTMLElement && labelNode.scrollWidth > labelNode.clientWidth + 1
+  }
+
+  function scheduleTooltip(target: HTMLElement, label: string) {
+    clearTooltipTimer()
+    setTooltip(null)
+    if (!shouldShowTooltip(label, target)) return
+
+    tooltipTimerRef.current = window.setTimeout(() => {
+      if (!target.isConnected) return
+      const rect = target.getBoundingClientRect()
+      setTooltip({
+        x: rect.left + rect.width / 2,
+        y: rect.bottom + 7,
+        label,
+      })
+    }, LIGHT_TOOLTIP_DELAY_MS)
+  }
+
+  function hideTooltip() {
+    clearTooltipTimer()
+    setTooltip(null)
   }
 
   function commitRename(project: Project) {
@@ -108,8 +151,15 @@ export default function NotesMenu({
             <button
               key={project.id}
               className={`notesMenuItem ${active ? 'active' : ''}`}
-              onClick={() => onOpenProject(project.id)}
+              onBlur={hideTooltip}
+              onClick={() => {
+                hideTooltip()
+                onOpenProject(project.id)
+              }}
               onContextMenu={(event) => openContextMenu(event, project.id)}
+              onFocus={(event) => scheduleTooltip(event.currentTarget, project.name)}
+              onMouseEnter={(event) => scheduleTooltip(event.currentTarget, project.name)}
+              onMouseLeave={hideTooltip}
               role="menuitem"
             >
               <span>{project.name}</span>
@@ -144,6 +194,13 @@ export default function NotesMenu({
           </button>
         </ContextMenu>
       )}
+      {tooltip &&
+        createPortal(
+          <div className="lightTooltip" role="tooltip" style={{ left: tooltip.x, top: tooltip.y }}>
+            {tooltip.label}
+          </div>,
+          document.body,
+        )}
     </div>
   )
 }
