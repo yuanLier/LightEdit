@@ -8,6 +8,7 @@ import { listenForEditorFocusRequest, setMainWindowAlwaysOnTop } from './desktop
 import { formatContent } from './formatters'
 import { createDefaultState, createId, loadState, saveState } from './storage'
 import type { AppState, Project, TextType, ToastState, Version } from './types'
+import { ACTION_TOAST_DURATION_MS, NORMAL_TOAST_DURATION_MS } from './uiTimings'
 import { versionLabel } from './versionLabel'
 
 function sortVersions(versions: Version[]) {
@@ -101,7 +102,8 @@ export default function App() {
 
   useEffect(() => {
     if (!toast) return
-    const timer = window.setTimeout(() => setToast(null), 2200)
+    const duration = toast.action ? ACTION_TOAST_DURATION_MS : NORMAL_TOAST_DURATION_MS
+    const timer = window.setTimeout(() => setToast(null), duration)
     return () => window.clearTimeout(timer)
   }, [toast])
 
@@ -139,8 +141,8 @@ export default function App() {
     }
   }, [state.isPinned])
 
-  function showToast(message: string) {
-    setToast({ id: Date.now(), message })
+  function showToast(message: string, action?: ToastState['action']) {
+    setToast({ id: Date.now(), message, action })
   }
 
   function updateActiveVersion(patch: Partial<Version>) {
@@ -249,6 +251,7 @@ export default function App() {
   function deleteProject(projectId: string) {
     const project = state.projects.find((candidate) => candidate.id === projectId)
     if (!project) return
+    const previousState = state
 
     const hasStarredVersion = state.versions.some(
       (version) => version.projectId === projectId && version.isStarred,
@@ -304,7 +307,15 @@ export default function App() {
     })
     setNotesOpen(false)
     setRenamingProjectId((current) => (current === projectId ? null : current))
-    showToast(`Deleted ${project.name}`)
+    showToast(`Deleted ${project.name}`, {
+      label: 'Undo',
+      onSelect: () => {
+        setState(previousState)
+        setRenamingProjectId(null)
+        setNotesOpen(false)
+        showToast(`Restored ${project.name}`)
+      },
+    })
   }
 
   function addVersion() {
@@ -339,6 +350,7 @@ export default function App() {
     const versionToDelete = state.versions.find((version) => version.id === versionId)
     if (!versionToDelete) return
     const label = versionLabel(versionToDelete)
+    const previousState = state
 
     const versionsForActiveProject = state.versions.filter(
       (version) => version.projectId === state.activeProjectId,
@@ -376,7 +388,13 @@ export default function App() {
         activeVersionId: nextVersion.id,
       }
     })
-    showToast(`Deleted ${label}`)
+    showToast(`Deleted ${label}`, {
+      label: 'Undo',
+      onSelect: () => {
+        setState(previousState)
+        showToast(`Restored ${label}`)
+      },
+    })
   }
 
   function renameVersion(versionId: string, name: string) {

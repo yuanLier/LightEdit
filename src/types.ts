@@ -32,4 +32,8 @@ export type AppState = {
 export type ToastState = {
   id: number
   message: string
+  action?: {
+    label: string
+    onSelect: () => void
+  }
 }

@@ -9,7 +9,12 @@ export default function Toast({ toast }: ToastProps) {
 
   return (
     <div className="toast" role="status" aria-live="polite">
-      {toast.message}
+      <span>{toast.message}</span>
+      {toast.action && (
+        <button className="toastAction" type="button" onClick={toast.action.onSelect}>
+          {toast.action.label}
+        </button>
+      )}
     </div>
   )
 }
