@@ -32,19 +32,22 @@ function createStorageMock(): Storage {
 describe('App project tabs', () => {
   beforeEach(() => {
     vi.stubGlobal('localStorage', createStorageMock())
+    vi.useRealTimers()
   })
 
-  it('closes a tab without deleting the project from Notes', () => {
+  it('closes the active tab, switches to a neighbor, and keeps the project in Notes', () => {
     render(<App />)
 
     fireEvent.click(screen.getByLabelText('Close LightEdit'))
 
     expect(screen.queryByRole('button', { name: 'LightEdit' })).not.toBeInTheDocument()
+    expect(screen.getByLabelText('API Test editor')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Open notes menu' }))
     fireEvent.click(screen.getByRole('menuitem', { name: /LightEdit/ }))
 
     expect(screen.getByRole('button', { name: 'LightEdit' })).toBeInTheDocument()
+    expect(screen.getByLabelText('LightEdit editor')).toBeInTheDocument()
   })
 
   it('prevents the browser context menu on the Notes chrome button', () => {
@@ -56,6 +59,82 @@ describe('App project tabs', () => {
         clientY: 28,
       }),
     ).toBe(false)
+  })
+})
+
+describe('App project and version lifecycle', () => {
+  beforeEach(() => {
+    vi.stubGlobal('localStorage', createStorageMock())
+    vi.useRealTimers()
+  })
+
+  it('creates a new project with a first blank text version and activates it', () => {
+    renderAppWithState(appStateWithProjects())
+
+    fireEvent.click(screen.getByRole('button', { name: 'New project' }))
+
+    expect(screen.getByRole('button', { name: 'Project 3' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Project 3 editor')).toBeInTheDocument()
+    expect(screen.getByRole('combobox')).toHaveValue('text')
+    expect(screen.getByLabelText('Editor')).toHaveValue('')
+  })
+
+  it('renames a project from the tab context menu', () => {
+    renderAppWithState(appStateWithProjects())
+
+    fireEvent.contextMenu(screen.getByRole('button', { name: 'Project 2' }), {
+      clientX: 240,
+      clientY: 32,
+    })
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Rename Project' }))
+    fireEvent.change(screen.getByLabelText('Rename Project 2'), {
+      target: { value: 'Scratch API' },
+    })
+    fireEvent.keyDown(screen.getByLabelText('Rename Project 2'), { key: 'Enter' })
+
+    expect(screen.getByRole('button', { name: 'Scratch API' })).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent('Renamed to Scratch API')
+  })
+
+  it('adds a version from the current content and activates it', () => {
+    renderAppWithState(appStateWithProjects())
+
+    fireEvent.click(screen.getByRole('button', { name: /add/i }))
+
+    expect(screen.getByRole('button', { name: 'v3' })).toBeInTheDocument()
+    expect(screen.getByRole('combobox')).toHaveValue('json')
+    expect(screen.getByLabelText('Editor')).toHaveValue('{"draft":true}')
+  })
+
+  it('deletes the active version and switches to a neighboring version', () => {
+    renderAppWithState(appStateWithProjects())
+
+    fireEvent.contextMenu(screen.getByRole('button', { name: 'v2' }), {
+      clientX: 34,
+      clientY: 120,
+    })
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Delete Version...' }))
+
+    expect(screen.queryByRole('button', { name: 'v2' })).not.toBeInTheDocument()
+    expect(screen.getByRole('combobox')).toHaveValue('text')
+    expect(screen.getByLabelText('Editor')).toHaveValue('before formatting')
+  })
+
+  it('renames a version from the version context menu', () => {
+    renderAppWithState(appStateWithProjects())
+
+    fireEvent.contextMenu(screen.getByRole('button', { name: 'v1' }), {
+      clientX: 34,
+      clientY: 150,
+    })
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Rename Version' }))
+    fireEvent.change(screen.getByLabelText('Rename v1'), {
+      target: { value: 'Draft copy' },
+    })
+    fireEvent.keyDown(screen.getByLabelText('Rename v1'), { key: 'Enter' })
+
+    expect(screen.getByRole('button', { name: 'Draft copy' })).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent('Renamed to Draft copy')
   })
 })
 

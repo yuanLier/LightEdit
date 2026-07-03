@@ -7,71 +7,22 @@ import VersionRail from './components/VersionRail'
 import { listenForEditorFocusRequest, setMainWindowAlwaysOnTop } from './desktop'
 import { formatContent } from './formatters'
 import { createDefaultState, createId, loadState, saveState } from './storage'
+import {
+  addProject as addProjectTransition,
+  addVersion as addVersionTransition,
+  closeProjectTab as closeProjectTabTransition,
+  deleteProject as deleteProjectTransition,
+  deleteVersion as deleteVersionTransition,
+  openProject as openProjectTransition,
+  renameProject as renameProjectTransition,
+  renameVersion as renameVersionTransition,
+  selectVersion,
+  sortVersions,
+  updateActiveVersion as updateActiveVersionTransition,
+} from './stateTransitions'
 import type { AppState, Project, TextType, ToastState, Version } from './types'
 import { ACTION_TOAST_DURATION_MS, NORMAL_TOAST_DURATION_MS } from './uiTimings'
 import { versionLabel } from './versionLabel'
-
-function sortVersions(versions: Version[]) {
-  return [...versions].sort((a, b) => b.versionIndex - a.versionIndex)
-}
-
-function firstVersionForProject(state: AppState, projectId: string) {
-  return sortVersions(state.versions.filter((version) => version.projectId === projectId))[0]
-}
-
-function createProjectWithVersion(name: string): { project: Project; version: Version } {
-  const now = Date.now()
-  const project: Project = {
-    id: createId(),
-    name,
-    createdAt: now,
-    updatedAt: now,
-    lastOpenedAt: now,
-  }
-  const version: Version = {
-    id: createId(),
-    projectId: project.id,
-    versionIndex: 1,
-    type: 'text',
-    content: '',
-    isStarred: false,
-    createdAt: now,
-    updatedAt: now,
-  }
-  return { project, version }
-}
-
-function nextProjectName(projects: Project[]) {
-  const maxNumber = projects.reduce((max, project) => {
-    const match = /^Project (\d+)$/.exec(project.name)
-    return match ? Math.max(max, Number(match[1])) : max
-  }, projects.length)
-  return `Project ${maxNumber + 1}`
-}
-
-function projectExists(projects: Project[], projectId: string) {
-  return projects.some((project) => project.id === projectId)
-}
-
-function neighborProjectId(state: AppState, deletedProjectId: string, remainingProjects: Project[]) {
-  const openOrder = state.openProjectIds.filter((projectId) => projectExists(state.projects, projectId))
-  const allOrder = state.projects.map((project) => project.id)
-  const order = openOrder.includes(deletedProjectId) ? openOrder : allOrder
-  const deletedIndex = order.indexOf(deletedProjectId)
-
-  if (deletedIndex >= 0) {
-    const left = order
-      .slice(0, deletedIndex)
-      .reverse()
-      .find((projectId) => projectExists(remainingProjects, projectId))
-    const right = order
-      .slice(deletedIndex + 1)
-      .find((projectId) => projectExists(remainingProjects, projectId))
-    return left ?? right ?? remainingProjects[0]?.id
-  }
-
-  return remainingProjects[0]?.id
-}
 
 export default function App() {
   const [state, setState] = useState<AppState>(() => loadState() ?? createDefaultState())
@@ -145,106 +96,42 @@ export default function App() {
     setToast({ id: Date.now(), message, action })
   }
 
+  function transitionOptions() {
+    return { now: Date.now(), createId }
+  }
+
   function updateActiveVersion(patch: Partial<Version>) {
-    setState((current) => ({
-      ...current,
-      versions: current.versions.map((version) =>
-        version.id === current.activeVersionId
-          ? { ...version, ...patch, updatedAt: Date.now() }
-          : version,
-      ),
-    }))
+    setState((current) => updateActiveVersionTransition(current, patch, Date.now()))
   }
 
   function openProject(projectId: string) {
-    setState((current) => {
-      const version = firstVersionForProject(current, projectId)
-      if (!version) return current
-      const now = Date.now()
-      return {
-        ...current,
-        projects: current.projects.map((project) =>
-          project.id === projectId ? { ...project, lastOpenedAt: now, updatedAt: now } : project,
-        ),
-        openProjectIds: current.openProjectIds.includes(projectId)
-          ? current.openProjectIds
-          : [...current.openProjectIds, projectId],
-        activeProjectId: projectId,
-        activeVersionId: version.id,
-      }
-    })
+    setState((current) => openProjectTransition(current, projectId, Date.now()))
     setNotesOpen(false)
   }
 
   function addProject() {
-    setState((current) => {
-      const { project, version } = createProjectWithVersion(nextProjectName(current.projects))
-      return {
-        ...current,
-        projects: [...current.projects, project],
-        versions: [...current.versions, version],
-        openProjectIds: [...current.openProjectIds, project.id],
-        activeProjectId: project.id,
-        activeVersionId: version.id,
-      }
-    })
+    setState((current) => addProjectTransition(current, transitionOptions()))
     setNotesOpen(false)
   }
 
   function renameProject(projectId: string, name: string) {
-    const project = state.projects.find((candidate) => candidate.id === projectId)
-    if (!project) return
-
-    const nextName = name.trim()
-    if (!nextName) return
+    const result = renameProjectTransition(state, projectId, name, Date.now())
     setRenamingProjectId(null)
-    if (nextName === project.name) return
+    if (!result.renamed || !result.name) return
 
-    setState((current) => ({
-      ...current,
-      projects: current.projects.map((candidate) =>
-        candidate.id === projectId
-          ? { ...candidate, name: nextName, updatedAt: Date.now() }
-          : candidate,
-      ),
-    }))
-    showToast(`Renamed to ${nextName}`)
+    setState(result.state)
+    showToast(`Renamed to ${result.name}`)
   }
 
   function closeProjectTab(projectId: string) {
-    const visibleOpenProjectIds = state.openProjectIds.filter((id) => projectExists(state.projects, id))
-    if (!visibleOpenProjectIds.includes(projectId)) return
-    if (visibleOpenProjectIds.length <= 1) {
+    const result = closeProjectTabTransition(state, projectId)
+    if (result.reason === 'keep-one') {
       showToast('Keep one tab open')
       return
     }
+    if (!result.closed) return
 
-    setState((current) => {
-      if (!current.openProjectIds.includes(projectId)) return current
-      if (current.openProjectIds.length <= 1) {
-        return current
-      }
-
-      const openOrder = current.openProjectIds.filter((id) => projectExists(current.projects, id))
-      const closedIndex = openOrder.indexOf(projectId)
-      const nextOpenProjectIds = openOrder.filter((id) => id !== projectId)
-
-      if (current.activeProjectId !== projectId) {
-        return { ...current, openProjectIds: nextOpenProjectIds }
-      }
-
-      const nextActiveProjectId =
-        nextOpenProjectIds[closedIndex] ?? nextOpenProjectIds[closedIndex - 1] ?? nextOpenProjectIds[0]
-      const nextVersion = firstVersionForProject(current, nextActiveProjectId)
-      if (!nextVersion) return current
-
-      return {
-        ...current,
-        openProjectIds: nextOpenProjectIds,
-        activeProjectId: nextActiveProjectId,
-        activeVersionId: nextVersion.id,
-      }
-    })
+    setState(result.state)
     setRenamingProjectId((current) => (current === projectId ? null : current))
   }
 
@@ -264,47 +151,7 @@ export default function App() {
       return
     }
 
-    setState((current) => {
-      const remainingProjects = current.projects.filter((candidate) => candidate.id !== projectId)
-      const remainingVersions = current.versions.filter((version) => version.projectId !== projectId)
-
-      if (remainingProjects.length === 0) {
-        const { project: fallbackProject, version: fallbackVersion } = createProjectWithVersion('LightEdit')
-        return {
-          ...current,
-          projects: [fallbackProject],
-          versions: [fallbackVersion],
-          openProjectIds: [fallbackProject.id],
-          activeProjectId: fallbackProject.id,
-          activeVersionId: fallbackVersion.id,
-        }
-      }
-
-      const nextActiveProjectId =
-        current.activeProjectId === projectId
-          ? neighborProjectId(current, projectId, remainingProjects)
-          : current.activeProjectId
-      const safeActiveProjectId = nextActiveProjectId ?? remainingProjects[0].id
-      const nextState = {
-        ...current,
-        projects: remainingProjects,
-        versions: remainingVersions,
-      }
-      const nextVersion = firstVersionForProject(nextState, safeActiveProjectId)
-      const remainingOpen = current.openProjectIds.filter(
-        (id) => id !== projectId && projectExists(remainingProjects, id),
-      )
-      const nextOpenProjectIds = remainingOpen.includes(safeActiveProjectId)
-        ? remainingOpen
-        : [...remainingOpen, safeActiveProjectId]
-
-      return {
-        ...nextState,
-        openProjectIds: nextOpenProjectIds,
-        activeProjectId: safeActiveProjectId,
-        activeVersionId: nextVersion?.id ?? remainingVersions[0]?.id ?? current.activeVersionId,
-      }
-    })
+    setState((current) => deleteProjectTransition(current, projectId, transitionOptions()))
     setNotesOpen(false)
     setRenamingProjectId((current) => (current === projectId ? null : current))
     showToast(`Deleted ${project.name}`, {
@@ -320,30 +167,7 @@ export default function App() {
 
   function addVersion() {
     if (!activeVersion) return
-    setState((current) => {
-      const currentVersion = current.versions.find((version) => version.id === current.activeVersionId)
-      if (!currentVersion) return current
-      const now = Date.now()
-      const versionsForProject = current.versions.filter(
-        (version) => version.projectId === current.activeProjectId,
-      )
-      const maxIndex = Math.max(...versionsForProject.map((version) => version.versionIndex))
-      const newVersion: Version = {
-        id: createId(),
-        projectId: current.activeProjectId,
-        versionIndex: maxIndex + 1,
-        type: currentVersion.type,
-        content: currentVersion.content,
-        isStarred: false,
-        createdAt: now,
-        updatedAt: now,
-      }
-      return {
-        ...current,
-        versions: [...current.versions, newVersion],
-        activeVersionId: newVersion.id,
-      }
-    })
+    setState((current) => addVersionTransition(current, transitionOptions()))
   }
 
   function deleteVersion(versionId: string) {
@@ -351,11 +175,9 @@ export default function App() {
     if (!versionToDelete) return
     const label = versionLabel(versionToDelete)
     const previousState = state
+    const deleteResult = deleteVersionTransition(state, versionId)
 
-    const versionsForActiveProject = state.versions.filter(
-      (version) => version.projectId === state.activeProjectId,
-    )
-    if (versionsForActiveProject.length <= 1) {
+    if (deleteResult.reason === 'keep-one') {
       showToast('Keep at least one version')
       return
     }
@@ -368,26 +190,7 @@ export default function App() {
       return
     }
 
-    setState((current) => {
-      const versionsForProject = sortVersions(
-        current.versions.filter((version) => version.projectId === current.activeProjectId),
-      )
-
-      if (current.activeVersionId !== versionId) {
-        return {
-          ...current,
-          versions: current.versions.filter((version) => version.id !== versionId),
-        }
-      }
-
-      const deletedIndex = versionsForProject.findIndex((version) => version.id === versionId)
-      const nextVersion = versionsForProject[deletedIndex + 1] ?? versionsForProject[deletedIndex - 1]
-      return {
-        ...current,
-        versions: current.versions.filter((version) => version.id !== versionId),
-        activeVersionId: nextVersion.id,
-      }
-    })
+    setState((current) => deleteVersionTransition(current, versionId).state)
     showToast(`Deleted ${label}`, {
       label: 'Undo',
       onSelect: () => {
@@ -398,24 +201,11 @@ export default function App() {
   }
 
   function renameVersion(versionId: string, name: string) {
-    const version = state.versions.find((candidate) => candidate.id === versionId)
-    if (!version) return
+    const result = renameVersionTransition(state, versionId, name, Date.now())
+    if (!result.renamed || !result.name) return
 
-    const nextName = name.trim()
-    if (!nextName) return
-
-    const currentName = version.name?.trim() ?? ''
-    if (nextName === currentName || nextName === versionLabel(version)) return
-
-    setState((current) => ({
-      ...current,
-      versions: current.versions.map((candidate) =>
-        candidate.id === versionId
-          ? { ...candidate, name: nextName, updatedAt: Date.now() }
-          : candidate,
-      ),
-    }))
-    showToast(`Renamed to ${nextName}`)
+    setState(result.state)
+    showToast(`Renamed to ${result.name}`)
   }
 
   function formatCurrent() {
@@ -456,7 +246,7 @@ export default function App() {
           <VersionRail
             versions={projectVersions}
             activeVersionId={state.activeVersionId}
-            onSelectVersion={(versionId) => setState((current) => ({ ...current, activeVersionId: versionId }))}
+            onSelectVersion={(versionId) => setState((current) => selectVersion(current, versionId))}
             onRenameVersion={renameVersion}
             onDeleteVersion={deleteVersion}
           />
