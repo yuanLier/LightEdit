@@ -115,12 +115,13 @@ export default function App() {
   }
 
   function renameProject(projectId: string, name: string) {
-    const result = renameProjectTransition(state, projectId, name, Date.now())
+    const project = state.projects.find((candidate) => candidate.id === projectId)
+    const nextName = name.trim()
     setRenamingProjectId(null)
-    if (!result.renamed || !result.name) return
+    if (!project || !nextName || nextName === project.name) return
 
-    setState(result.state)
-    showToast(`Renamed to ${result.name}`)
+    setState((current) => renameProjectTransition(current, projectId, nextName, Date.now()).state)
+    showToast(`Renamed to ${nextName}`)
   }
 
   function closeProjectTab(projectId: string) {
@@ -131,7 +132,7 @@ export default function App() {
     }
     if (!result.closed) return
 
-    setState(result.state)
+    setState((current) => closeProjectTabTransition(current, projectId).state)
     setRenamingProjectId((current) => (current === projectId ? null : current))
   }
 
@@ -157,7 +158,7 @@ export default function App() {
     showToast(`Deleted ${project.name}`, {
       label: 'Undo',
       onSelect: () => {
-        setState(previousState)
+        setState((current) => ({ ...previousState, isPinned: current.isPinned }))
         setRenamingProjectId(null)
         setNotesOpen(false)
         showToast(`Restored ${project.name}`)
@@ -194,18 +195,20 @@ export default function App() {
     showToast(`Deleted ${label}`, {
       label: 'Undo',
       onSelect: () => {
-        setState(previousState)
+        setState((current) => ({ ...previousState, isPinned: current.isPinned }))
         showToast(`Restored ${label}`)
       },
     })
   }
 
   function renameVersion(versionId: string, name: string) {
-    const result = renameVersionTransition(state, versionId, name, Date.now())
-    if (!result.renamed || !result.name) return
+    const version = state.versions.find((candidate) => candidate.id === versionId)
+    const nextName = name.trim()
+    const currentName = version?.name?.trim() ?? ''
+    if (!version || !nextName || nextName === currentName || nextName === versionLabel(version)) return
 
-    setState(result.state)
-    showToast(`Renamed to ${result.name}`)
+    setState((current) => renameVersionTransition(current, versionId, nextName, Date.now()).state)
+    showToast(`Renamed to ${nextName}`)
   }
 
   function formatCurrent() {
@@ -215,6 +218,11 @@ export default function App() {
       updateActiveVersion({ content: result.content })
     }
     showToast(result.message)
+  }
+
+  function togglePin() {
+    const nextPinned = !state.isPinned
+    setState((current) => ({ ...current, isPinned: nextPinned }))
   }
 
   if (!activeProject || !activeVersion) {
@@ -240,7 +248,7 @@ export default function App() {
           onCancelRenameProject={() => setRenamingProjectId(null)}
           onCloseProject={closeProjectTab}
           onDeleteProject={deleteProject}
-          onTogglePin={() => setState((current) => ({ ...current, isPinned: !current.isPinned }))}
+          onTogglePin={togglePin}
         />
         <div className="workbench">
           <VersionRail

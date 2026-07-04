@@ -94,16 +94,16 @@ describe('storage', () => {
     expect(state.projects.every((item) => state.versions.some((v) => v.projectId === item.id))).toBe(true)
   })
 
-  it('round-trips project, version, active selection, and content through localStorage', () => {
+  it('round-trips project, version, active selection, and content without persisting pin', () => {
     const state = appState()
 
     saveState(state)
 
-    expect(loadState()).toEqual(state)
+    expect(loadState()).toEqual({ ...state, isPinned: false })
     expect(JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')).toMatchObject({
       activeProjectId: 'project-2',
       activeVersionId: 'version-3',
-      isPinned: true,
+      isPinned: false,
     })
   })
 
@@ -141,7 +141,7 @@ describe('storage', () => {
         activeProjectId: 'missing-project',
         activeVersionId: 'missing-version',
         openProjectIds: ['missing-project', 'project-1', 'project-1'],
-        isPinned: undefined,
+        isPinned: true,
       }),
     )
 

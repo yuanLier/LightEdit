@@ -1,8 +1,15 @@
-import { act, fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 import { STORAGE_KEY } from './storage'
 import type { AppState, TextType } from './types'
+
+const desktopMocks = vi.hoisted(() => ({
+  listenForEditorFocusRequest: vi.fn(() => Promise.resolve(undefined)),
+  setMainWindowAlwaysOnTop: vi.fn(() => Promise.resolve(true)),
+}))
+
+vi.mock('./desktop', () => desktopMocks)
 
 function createStorageMock(): Storage {
   const store = new Map<string, string>()
@@ -32,6 +39,8 @@ function createStorageMock(): Storage {
 describe('App project tabs', () => {
   beforeEach(() => {
     vi.stubGlobal('localStorage', createStorageMock())
+    desktopMocks.listenForEditorFocusRequest.mockClear()
+    desktopMocks.setMainWindowAlwaysOnTop.mockClear()
     vi.useRealTimers()
   })
 
@@ -65,6 +74,8 @@ describe('App project tabs', () => {
 describe('App project and version lifecycle', () => {
   beforeEach(() => {
     vi.stubGlobal('localStorage', createStorageMock())
+    desktopMocks.listenForEditorFocusRequest.mockClear()
+    desktopMocks.setMainWindowAlwaysOnTop.mockClear()
     vi.useRealTimers()
   })
 
@@ -135,6 +146,43 @@ describe('App project and version lifecycle', () => {
 
     expect(screen.getByRole('button', { name: 'Draft copy' })).toBeInTheDocument()
     expect(screen.getByRole('status')).toHaveTextContent('Renamed to Draft copy')
+  })
+
+  it('normalizes persisted pin state to unpinned during initial render', async () => {
+    renderAppWithState({ ...appStateWithProjects(), isPinned: true })
+
+    expect(screen.getByRole('button', { name: 'Pin window on top' })).not.toHaveClass('active')
+    await waitFor(() => {
+      expect(desktopMocks.setMainWindowAlwaysOnTop).toHaveBeenCalledWith(false)
+    })
+    expect(desktopMocks.setMainWindowAlwaysOnTop).not.toHaveBeenCalledWith(true)
+  })
+
+  it('syncs the native pin state from the current runtime state', async () => {
+    renderAppWithState(appStateWithProjects())
+
+    const pinButton = screen.getByRole('button', { name: 'Pin window on top' })
+
+    await waitFor(() => {
+      expect(desktopMocks.setMainWindowAlwaysOnTop).toHaveBeenCalledTimes(1)
+    })
+    expect(desktopMocks.setMainWindowAlwaysOnTop).toHaveBeenLastCalledWith(false)
+
+    fireEvent.click(pinButton)
+
+    expect(pinButton).toHaveClass('active')
+    await waitFor(() => {
+      expect(desktopMocks.setMainWindowAlwaysOnTop).toHaveBeenCalledTimes(2)
+    })
+    expect(desktopMocks.setMainWindowAlwaysOnTop).toHaveBeenLastCalledWith(true)
+
+    fireEvent.click(pinButton)
+
+    expect(pinButton).not.toHaveClass('active')
+    await waitFor(() => {
+      expect(desktopMocks.setMainWindowAlwaysOnTop).toHaveBeenCalledTimes(3)
+    })
+    expect(desktopMocks.setMainWindowAlwaysOnTop).toHaveBeenLastCalledWith(false)
   })
 })
 
@@ -267,6 +315,8 @@ function renderAppWithVersion(type: TextType, content: string) {
 describe('App formatting', () => {
   beforeEach(() => {
     vi.stubGlobal('localStorage', createStorageMock())
+    desktopMocks.listenForEditorFocusRequest.mockClear()
+    desktopMocks.setMainWindowAlwaysOnTop.mockClear()
   })
 
   it('formats JSON from the toolbar and confirms the action', () => {
@@ -311,6 +361,8 @@ describe('App formatting', () => {
 describe('App delete undo', () => {
   beforeEach(() => {
     vi.stubGlobal('localStorage', createStorageMock())
+    desktopMocks.listenForEditorFocusRequest.mockClear()
+    desktopMocks.setMainWindowAlwaysOnTop.mockClear()
     vi.useRealTimers()
   })
 
@@ -398,5 +450,23 @@ describe('App delete undo', () => {
 
     expect(screen.queryByRole('button', { name: 'Undo' })).not.toBeInTheDocument()
     vi.useRealTimers()
+  })
+
+  it('restores deleted data without reverting a pin change made after deletion', () => {
+    renderAppWithState(appStateWithProjects())
+
+    fireEvent.contextMenu(screen.getByRole('button', { name: 'v1' }), {
+      clientX: 34,
+      clientY: 150,
+    })
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Delete Version...' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Pin window on top' }))
+
+    expect(screen.getByRole('button', { name: 'Pin window on top' })).toHaveClass('active')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }))
+
+    expect(screen.getByRole('button', { name: 'v1' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Pin window on top' })).toHaveClass('active')
   })
 })

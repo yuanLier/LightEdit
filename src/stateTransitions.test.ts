@@ -8,6 +8,8 @@ import {
   openProject,
   renameProject,
   renameVersion,
+  selectVersion,
+  updateActiveVersion,
 } from './stateTransitions'
 import type { AppState, TextType } from './types'
 
@@ -211,5 +213,23 @@ describe('state transitions', () => {
       name: 'Draft copy',
       updatedAt: 100,
     })
+  })
+
+  it('preserves the window pin preference across content transitions', () => {
+    const current = { ...state(), isPinned: true }
+    const nextStates = [
+      updateActiveVersion(current, { content: 'updated' }, 100),
+      openProject(current, 'project-api', 100),
+      addProject(current, transitionOptions('project-new', 'version-new')),
+      renameProject(current, 'project-2', 'Renamed Project', 100).state,
+      closeProjectTab(current, 'project-3').state,
+      deleteProject(current, 'project-3', transitionOptions('unused-project', 'unused-version')),
+      addVersion(current, transitionOptions('project-2-v3')),
+      selectVersion(current, 'project-2-v1'),
+      deleteVersion(current, 'project-2-v1').state,
+      renameVersion(current, 'project-2-v1', 'Draft Copy', 100).state,
+    ]
+
+    expect(nextStates.every((next) => next.isPinned)).toBe(true)
   })
 })

@@ -181,7 +181,7 @@ export function normalizeStoredState(value: unknown): AppState | null {
     openProjectIds,
     activeProjectId,
     activeVersionId: activeVersion.id,
-    isPinned: typeof value.isPinned === 'boolean' ? value.isPinned : false,
+    isPinned: false,
   }
 }
 
@@ -197,7 +197,7 @@ export function loadState(): AppState | null {
 }
 
 export function saveState(state: AppState) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, isPinned: false }))
 }
 
 export function resetStoredState() {
