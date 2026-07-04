@@ -18,6 +18,17 @@ The expected macOS app artifact is:
 
 Before release validation, clear the V0 local state or launch with an empty profile.
 
+The V0 storage key is:
+
+- `lightedit:v0.4:reference`
+
+For dev / preview validation, clear it from the WebView or browser console:
+
+```js
+localStorage.removeItem('lightedit:v0.4:reference')
+location.reload()
+```
+
 Expected first-run state:
 
 - One Project: `LightEdit`
@@ -36,7 +47,10 @@ Expected first-run state:
 - While another app is fullscreen, press `Cmd+Shift+L`; LightEdit should appear in that fullscreen Space.
 - Move the mouse to another display, press `Cmd+Shift+L`, and confirm LightEdit appears near that display.
 - Drag the top bar and project tabs; dragging should be smooth, without text selection or ghosting.
-- Toggle Pin on and off; the icon state should update and the window should remain usable.
+- With Pin off, click another app or the desktop; LightEdit should auto-hide.
+- Press `Cmd+Shift+L` to show LightEdit again.
+- Turn Pin on, then click another app or the desktop; LightEdit should remain visible.
+- Turn Pin off again; the icon state should update and the window should remain usable.
 - Quit and relaunch; Pin should start off.
 
 ## Product Manual Check
@@ -55,6 +69,7 @@ Expected first-run state:
 ## Known V0 Limits
 
 - Storage is local only through `localStorage`.
+- V0 does not include an in-app reset button; local data cleanup is manual for release validation.
 - Window size and position are not persisted across app restarts.
 - DMG packaging, code signing, notarization, and auto-update are not part of this V0 gate.
 - The editor remains a lightweight `textarea + syntax overlay`; CodeMirror/Monaco are reserved for a later version.
