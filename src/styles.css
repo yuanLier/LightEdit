@@ -133,7 +133,7 @@ button {
 
 .contextMenu {
   position: fixed;
-  z-index: 30;
+  z-index: 1000;
   width: 164px;
   padding: 6px;
   border: 1px solid rgba(225, 212, 194, 0.94);
@@ -148,6 +148,7 @@ button {
 .contextMenu button {
   display: flex;
   align-items: center;
+  gap: 8px;
   width: 100%;
   min-height: 30px;
   padding: 0 10px;
@@ -199,7 +200,7 @@ button {
 
 .lightTooltip {
   position: fixed;
-  z-index: 40;
+  z-index: 1100;
   max-width: min(280px, calc(100vw - 24px));
   padding: 5px 9px;
   border: 1px solid rgba(225, 212, 194, 0.94);
@@ -421,22 +422,21 @@ button {
   width: calc(100% - 50px);
   max-width: calc(100% - 50px);
   min-width: 0;
-  height: 30px;
+  height: 34px;
   margin-left: 14px;
   padding: 0 8px;
-  border: 1px solid rgba(239, 161, 26, 0.24);
-  border-radius: 7px;
+  border: 0;
+  border-radius: 0;
   outline: 0;
   color: var(--text);
-  background: rgba(255, 253, 248, 0.9);
+  background: transparent;
   font-size: inherit;
   font-weight: 480;
   -webkit-app-region: no-drag;
 }
 
 .projectTabRename:focus {
-  border-color: rgba(239, 161, 26, 0.42);
-  box-shadow: 0 0 0 2px rgba(239, 161, 26, 0.1);
+  box-shadow: none;
 }
 
 .projectTabRename::placeholder {
@@ -740,33 +740,50 @@ button {
   border-radius: 8px;
 }
 
-.typeSelect {
-  min-width: 82px;
-  padding: 8px 28px 8px 10px;
+.typeSelectButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 86px;
+  min-height: 38px;
+  padding: 0 9px 0 10px;
   border: 0;
+  border-radius: 8px;
   outline: 0;
   color: #403a32;
   background: transparent;
-  appearance: none;
   cursor: pointer;
   font-size: var(--toolbar-font-size);
 }
 
-.typeSelectWrap:hover {
+.typeSelectButton:hover,
+.typeSelectButton[aria-expanded="true"] {
   background: var(--hover-soft);
 }
 
-.typeSelectWrap::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  right: 8px;
-  width: 8px;
-  height: 8px;
-  border-right: 1.5px solid #5b554d;
-  border-bottom: 1.5px solid #5b554d;
-  pointer-events: none;
-  transform: translateY(-70%) rotate(45deg);
+.typeSelectButton span {
+  min-width: 0;
+}
+
+.contextMenu.typeMenu {
+  width: 116px;
+  padding: 7px;
+}
+
+.contextMenu.typeMenu button {
+  min-height: 32px;
+  padding: 0 10px 0 8px;
+  font-size: 0.82rem;
+}
+
+.typeMenuCheck {
+  flex: 0 0 auto;
+  color: var(--accent);
+  opacity: 0;
+}
+
+.typeMenuCheck[data-visible="true"] {
+  opacity: 1;
 }
 
 .toolbarAction {

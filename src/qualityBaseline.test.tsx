@@ -139,7 +139,7 @@ describe('LightEdit quality baseline', () => {
     expect(within(versionRail).getByRole('button', { name: 'v1' })).toBeInTheDocument()
 
     expect(screen.getByLabelText('Project 2 editor')).toBeInTheDocument()
-    expect(screen.getByRole('combobox')).toHaveValue('json')
+    expect(screen.getByRole('button', { name: 'Content type: JSON' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /format/i })).toBeInTheDocument()
     expect(screen.getByLabelText('Editor')).toHaveValue(apiContent)
     expect(container.querySelectorAll('.lineNumbers span')).toHaveLength(16)

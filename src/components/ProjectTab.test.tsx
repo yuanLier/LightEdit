@@ -53,6 +53,7 @@ describe('ProjectTab', () => {
     expect(fireEvent.contextMenu(tabButton, { clientX: 140, clientY: 32 })).toBe(false)
 
     expect(screen.getByRole('menu')).toBeInTheDocument()
+    expect(screen.getByRole('menu').parentElement).toBe(document.body)
     fireEvent.click(screen.getByRole('menuitem', { name: 'Rename Project' }))
     expect(props.onStartRename).toHaveBeenCalledTimes(1)
 

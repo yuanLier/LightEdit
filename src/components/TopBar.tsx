@@ -52,6 +52,7 @@ export default function TopBar({
       const target = event.target
       if (!(target instanceof Node)) return
       if (notesMenuSlotRef.current?.contains(target)) return
+      if (target instanceof Element && target.closest('[data-lightedit-floating-menu]')) return
       onCloseNotes()
     }
 

@@ -1,5 +1,7 @@
-import { AlignLeft, Plus, Star } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { AlignLeft, Check, ChevronDown, Plus, Star } from 'lucide-react'
 import type { TextType, Version } from '../types'
+import ContextMenu from './ContextMenu'
 
 type EditorToolbarProps = {
   version: Version
@@ -22,22 +24,65 @@ export default function EditorToolbar({
   onFormat,
   onToggleStar,
 }: EditorToolbarProps) {
+  const typeButtonRef = useRef<HTMLButtonElement>(null)
+  const [typeMenuPosition, setTypeMenuPosition] = useState<{ x: number; y: number } | null>(null)
+  const activeType = typeOptions.find((option) => option.value === version.type) ?? typeOptions[0]
+
+  function openTypeMenu() {
+    const rect = typeButtonRef.current?.getBoundingClientRect()
+    if (!rect) return
+    setTypeMenuPosition({
+      x: Math.max(8, Math.min(rect.left, window.innerWidth - 122)),
+      y: Math.max(8, Math.min(rect.bottom + 6, window.innerHeight - 130)),
+    })
+  }
+
+  function selectType(type: TextType) {
+    setTypeMenuPosition(null)
+    if (type !== version.type) onTypeChange(type)
+  }
+
   return (
     <div className="editorToolbar">
       <div className="toolbarLeft">
-        <label className="typeSelectWrap">
-          <select
-            className="typeSelect"
-            value={version.type}
-            onChange={(event) => onTypeChange(event.target.value as TextType)}
+        <div className="typeSelectWrap">
+          <button
+            ref={typeButtonRef}
+            className="typeSelectButton"
+            aria-label={`Content type: ${activeType.label}`}
+            aria-haspopup="menu"
+            aria-expanded={Boolean(typeMenuPosition)}
+            onClick={openTypeMenu}
           >
-            {typeOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
+            <span>{activeType.label}</span>
+            <ChevronDown size={17} strokeWidth={1.8} />
+          </button>
+          {typeMenuPosition && (
+            <ContextMenu
+              position={typeMenuPosition}
+              onClose={() => setTypeMenuPosition(null)}
+              className="typeMenu"
+            >
+              {typeOptions.map((option) => (
+                <button
+                  key={option.value}
+                  role="menuitemradio"
+                  aria-checked={option.value === version.type}
+                  onClick={() => selectType(option.value)}
+                >
+                  <Check
+                    className="typeMenuCheck"
+                    size={14}
+                    strokeWidth={1.9}
+                    aria-hidden="true"
+                    data-visible={option.value === version.type}
+                  />
+                  <span>{option.label}</span>
+                </button>
+              ))}
+            </ContextMenu>
+          )}
+        </div>
       </div>
       <div className="toolbarRight">
         <button className="toolbarAction" title="Add version from current content" onClick={onAddVersion}>

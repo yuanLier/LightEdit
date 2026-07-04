@@ -85,7 +85,7 @@ describe('App project and version lifecycle', () => {
     expect(screen.getByRole('button', { name: 'LightEdit' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'API Test' })).not.toBeInTheDocument()
     expect(screen.getByLabelText('LightEdit editor')).toBeInTheDocument()
-    expect(screen.getByRole('combobox')).toHaveValue('text')
+    expect(screen.getByRole('button', { name: 'Content type: Text' })).toBeInTheDocument()
     expect(screen.getByLabelText('Editor')).toHaveValue('')
     expect(screen.getByPlaceholderText('Start typing, or paste a quick note...')).toBeInTheDocument()
   })
@@ -99,7 +99,7 @@ describe('App project and version lifecycle', () => {
     expect(input).toHaveValue('')
     expect(input).toHaveAttribute('placeholder', 'Project 3')
     expect(screen.getByLabelText('Project 3 editor')).toBeInTheDocument()
-    expect(screen.getByRole('combobox')).toHaveValue('text')
+    expect(screen.getByRole('button', { name: 'Content type: Text' })).toBeInTheDocument()
     expect(screen.getByLabelText('Editor')).toHaveValue('')
 
     fireEvent.change(input, { target: { value: 'Scratch Inbox' } })
@@ -118,6 +118,17 @@ describe('App project and version lifecycle', () => {
     fireEvent.keyDown(input, { key: 'ArrowRight' })
 
     expect(input).toHaveValue('Project 3')
+  })
+
+  it('changes the current version type from the custom type menu', () => {
+    renderAppWithState(appStateWithProjects())
+
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Content type: JSON' }))
+    fireEvent.click(screen.getByRole('menuitemradio', { name: 'SQL' }))
+
+    expect(screen.getByRole('button', { name: 'Content type: SQL' })).toBeInTheDocument()
   })
 
   it('creates a new project from Notes and closes the menu into inline naming', () => {
@@ -148,13 +159,46 @@ describe('App project and version lifecycle', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Renamed to Scratch API')
   })
 
+  it('keeps Notes context menu actions live after the menu is portaled', () => {
+    renderAppWithState(appStateWithProjects())
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open notes menu' }))
+    fireEvent.contextMenu(screen.getByRole('menuitem', { name: /Project 2/ }), {
+      clientX: 520,
+      clientY: 150,
+    })
+
+    const renameItem = screen.getByRole('menuitem', { name: 'Rename Project' })
+    fireEvent.pointerDown(renameItem)
+    fireEvent.click(renameItem)
+
+    expect(screen.getByLabelText('Rename Project 2')).toBeInTheDocument()
+  })
+
+  it('deletes a project from the Notes context menu after pointerdown on the portaled menu', () => {
+    renderAppWithState(appStateWithProjects())
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open notes menu' }))
+    fireEvent.contextMenu(screen.getByRole('menuitem', { name: /Project 2/ }), {
+      clientX: 520,
+      clientY: 150,
+    })
+
+    const deleteItem = screen.getByRole('menuitem', { name: 'Delete Project...' })
+    fireEvent.pointerDown(deleteItem)
+    fireEvent.click(deleteItem)
+
+    expect(screen.queryByRole('button', { name: 'Project 2' })).not.toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent('Deleted Project 2')
+  })
+
   it('adds a version from the current content and activates it', () => {
     renderAppWithState(appStateWithProjects())
 
     fireEvent.click(screen.getByRole('button', { name: /add/i }))
 
     expect(screen.getByRole('button', { name: 'v3' })).toBeInTheDocument()
-    expect(screen.getByRole('combobox')).toHaveValue('json')
+    expect(screen.getByRole('button', { name: 'Content type: JSON' })).toBeInTheDocument()
     expect(screen.getByLabelText('Editor')).toHaveValue('{"draft":true}')
   })
 
@@ -168,7 +212,7 @@ describe('App project and version lifecycle', () => {
     fireEvent.click(screen.getByRole('menuitem', { name: 'Delete Version...' }))
 
     expect(screen.queryByRole('button', { name: 'v2' })).not.toBeInTheDocument()
-    expect(screen.getByRole('combobox')).toHaveValue('text')
+    expect(screen.getByRole('button', { name: 'Content type: Text' })).toBeInTheDocument()
     expect(screen.getByLabelText('Editor')).toHaveValue('before formatting')
   })
 

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import type { MouseEvent, ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 
 export type ContextMenuPosition = {
   x: number
@@ -15,6 +16,7 @@ type ContextMenuProps = {
   position: ContextMenuPosition
   onClose: () => void
   children: ReactNode
+  className?: string
 }
 
 export function getContextMenuPosition(
@@ -27,7 +29,7 @@ export function getContextMenuPosition(
   }
 }
 
-export default function ContextMenu({ position, onClose, children }: ContextMenuProps) {
+export default function ContextMenu({ position, onClose, children, className }: ContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -49,16 +51,18 @@ export default function ContextMenu({ position, onClose, children }: ContextMenu
     }
   }, [onClose])
 
-  return (
+  return createPortal(
     <div
       ref={menuRef}
-      className="contextMenu"
+      className={className ? `contextMenu ${className}` : 'contextMenu'}
       role="menu"
       style={{ left: position.x, top: position.y }}
+      data-lightedit-floating-menu
       data-window-control
       onContextMenu={(event) => event.preventDefault()}
     >
       {children}
-    </div>
+    </div>,
+    document.body,
   )
 }
