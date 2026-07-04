@@ -3,11 +3,32 @@
 mod shortcuts;
 mod window_native;
 
+use std::sync::atomic::{AtomicBool, Ordering};
+
 use tauri::{AppHandle, Emitter, Manager, WebviewWindow};
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
 
 const MAIN_WINDOW_LABEL: &str = "main";
 const FOCUS_EDITOR_EVENT: &str = "lightedit://focus-editor";
+
+#[derive(Default)]
+struct WindowSession {
+    pinned: AtomicBool,
+}
+
+impl WindowSession {
+    fn set_pinned(&self, pinned: bool) {
+        self.pinned.store(pinned, Ordering::Relaxed);
+    }
+
+    fn is_pinned(&self) -> bool {
+        self.pinned.load(Ordering::Relaxed)
+    }
+}
+
+fn should_hide_on_focus_lost(is_pinned: bool) -> bool {
+    !is_pinned
+}
 
 fn main_window(app: &AppHandle) -> Result<WebviewWindow, String> {
     app.get_webview_window(MAIN_WINDOW_LABEL)
@@ -65,6 +86,7 @@ fn set_main_window_always_on_top(app: AppHandle, pinned: bool) -> Result<(), Str
         .set_always_on_top(pinned)
         .map_err(|error| error.to_string())?;
     window_native::set_main_window_floating(&window, pinned)?;
+    app.state::<WindowSession>().set_pinned(pinned);
     if pinned {
         window_native::raise_main_window(&window)?;
         window_native::schedule_deferred_raise(&window);
@@ -74,6 +96,7 @@ fn set_main_window_always_on_top(app: AppHandle, pinned: bool) -> Result<(), Str
 
 fn main() {
     tauri::Builder::default()
+        .manage(WindowSession::default())
         .plugin(tauri_nspanel::init())
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
@@ -111,16 +134,33 @@ fn main() {
                 return;
             }
 
-            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-                api.prevent_close();
-                if let Err(error) = window.hide() {
-                    eprintln!("failed to hide LightEdit main window: {error}");
+            match event {
+                tauri::WindowEvent::CloseRequested { api, .. } => {
+                    api.prevent_close();
+                    if let Err(error) = window.hide() {
+                        eprintln!("failed to hide LightEdit main window: {error}");
+                    }
+                    if let Err(error) =
+                        window_native::restore_regular_activation_policy(window.app_handle())
+                    {
+                        eprintln!("failed to restore LightEdit activation policy: {error}");
+                    }
                 }
-                if let Err(error) =
-                    window_native::restore_regular_activation_policy(window.app_handle())
+                tauri::WindowEvent::Focused(false)
+                    if should_hide_on_focus_lost(
+                        window.app_handle().state::<WindowSession>().is_pinned(),
+                    ) =>
                 {
-                    eprintln!("failed to restore LightEdit activation policy: {error}");
+                    if let Err(error) = window.hide() {
+                        eprintln!("failed to auto-hide LightEdit main window: {error}");
+                    }
+                    if let Err(error) =
+                        window_native::restore_regular_activation_policy(window.app_handle())
+                    {
+                        eprintln!("failed to restore LightEdit activation policy: {error}");
+                    }
                 }
+                _ => {}
             }
         })
         .invoke_handler(tauri::generate_handler![
@@ -131,4 +171,30 @@ fn main() {
         ])
         .run(tauri::generate_context!())
         .expect("error while running LightEdit");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{should_hide_on_focus_lost, WindowSession};
+
+    #[test]
+    fn unpinned_window_hides_on_focus_lost() {
+        assert!(should_hide_on_focus_lost(false));
+    }
+
+    #[test]
+    fn pinned_window_stays_visible_on_focus_lost() {
+        assert!(!should_hide_on_focus_lost(true));
+    }
+
+    #[test]
+    fn window_session_tracks_runtime_pin_state() {
+        let session = WindowSession::default();
+
+        assert!(!session.is_pinned());
+        session.set_pinned(true);
+        assert!(session.is_pinned());
+        session.set_pinned(false);
+        assert!(!session.is_pinned());
+    }
 }

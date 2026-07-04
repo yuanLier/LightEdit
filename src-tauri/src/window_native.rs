@@ -341,6 +341,9 @@ pub fn schedule_deferred_raise(window: &WebviewWindow) {
     thread::spawn(move || {
         for _ in 0..12 {
             thread::sleep(Duration::from_millis(20));
+            if !pending_window.is_visible().unwrap_or(false) {
+                return;
+            }
             if raise_main_window(&pending_window).is_err() {
                 return;
             }
