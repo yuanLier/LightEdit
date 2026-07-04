@@ -88,6 +88,10 @@ describe('storage', () => {
     const projectIds = new Set(state.projects.map((item) => item.id))
     const activeVersion = state.versions.find((item) => item.id === state.activeVersionId)
 
+    expect(state.projects).toHaveLength(1)
+    expect(state.projects[0]).toMatchObject({ name: 'LightEdit' })
+    expect(state.versions).toHaveLength(1)
+    expect(activeVersion).toMatchObject({ versionIndex: 1, type: 'text', content: '' })
     expect(projectIds.has(state.activeProjectId)).toBe(true)
     expect(activeVersion?.projectId).toBe(state.activeProjectId)
     expect(state.openProjectIds).toContain(state.activeProjectId)

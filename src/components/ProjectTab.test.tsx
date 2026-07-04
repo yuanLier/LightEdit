@@ -23,6 +23,7 @@ function renderProjectTab({
     project: tabProject,
     active: true,
     renaming,
+    renameSuggestion: false,
     onSelect: vi.fn(),
     onStartRename: vi.fn(),
     onRename: vi.fn(),
@@ -72,6 +73,60 @@ describe('ProjectTab', () => {
     fireEvent.keyDown(input, { key: 'Enter' })
 
     expect(props.onRename).toHaveBeenCalledWith('Project Mercury')
+    expect(props.onCancelRename).not.toHaveBeenCalled()
+  })
+
+  it('uses a lightweight suggestion for a newly created project name', () => {
+    const suggestedProject = { ...project, name: 'Project 3' }
+    const props = {
+      project: suggestedProject,
+      active: true,
+      renaming: true,
+      renameSuggestion: true,
+      onSelect: vi.fn(),
+      onStartRename: vi.fn(),
+      onRename: vi.fn(),
+      onCancelRename: vi.fn(),
+      onClose: vi.fn(),
+      onDelete: vi.fn(),
+    }
+
+    render(<ProjectTab {...props} />)
+
+    const input = screen.getByLabelText('Rename Project 3')
+    expect(input).toHaveValue('')
+    expect(input).toHaveAttribute('placeholder', 'Project 3')
+
+    fireEvent.keyDown(input, { key: 'ArrowRight' })
+    expect(input).toHaveValue('Project 3')
+
+    fireEvent.keyDown(input, { key: 'Enter' })
+    expect(props.onRename).not.toHaveBeenCalled()
+    expect(props.onCancelRename).toHaveBeenCalledTimes(1)
+  })
+
+  it('lets typed text replace the new project suggestion', () => {
+    const suggestedProject = { ...project, name: 'Project 3' }
+    const props = {
+      project: suggestedProject,
+      active: true,
+      renaming: true,
+      renameSuggestion: true,
+      onSelect: vi.fn(),
+      onStartRename: vi.fn(),
+      onRename: vi.fn(),
+      onCancelRename: vi.fn(),
+      onClose: vi.fn(),
+      onDelete: vi.fn(),
+    }
+
+    render(<ProjectTab {...props} />)
+
+    const input = screen.getByLabelText('Rename Project 3')
+    fireEvent.change(input, { target: { value: 'Scratch Inbox' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+
+    expect(props.onRename).toHaveBeenCalledWith('Scratch Inbox')
     expect(props.onCancelRename).not.toHaveBeenCalled()
   })
 

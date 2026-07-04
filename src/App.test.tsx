@@ -45,18 +45,18 @@ describe('App project tabs', () => {
   })
 
   it('closes the active tab, switches to a neighbor, and keeps the project in Notes', () => {
-    render(<App />)
+    renderAppWithState(appStateWithProjects())
 
-    fireEvent.click(screen.getByLabelText('Close LightEdit'))
+    fireEvent.click(screen.getByLabelText('Close Project 2'))
 
-    expect(screen.queryByRole('button', { name: 'LightEdit' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Project 2' })).not.toBeInTheDocument()
     expect(screen.getByLabelText('API Test editor')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Open notes menu' }))
-    fireEvent.click(screen.getByRole('menuitem', { name: /LightEdit/ }))
+    fireEvent.click(screen.getByRole('menuitem', { name: /Project 2/ }))
 
-    expect(screen.getByRole('button', { name: 'LightEdit' })).toBeInTheDocument()
-    expect(screen.getByLabelText('LightEdit editor')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Project 2' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Project 2 editor')).toBeInTheDocument()
   })
 
   it('prevents the browser context menu on the Notes chrome button', () => {
@@ -79,15 +79,56 @@ describe('App project and version lifecycle', () => {
     vi.useRealTimers()
   })
 
-  it('creates a new project with a first blank text version and activates it', () => {
+  it('starts with a single blank LightEdit text project when storage is empty', () => {
+    render(<App />)
+
+    expect(screen.getByRole('button', { name: 'LightEdit' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'API Test' })).not.toBeInTheDocument()
+    expect(screen.getByLabelText('LightEdit editor')).toBeInTheDocument()
+    expect(screen.getByRole('combobox')).toHaveValue('text')
+    expect(screen.getByLabelText('Editor')).toHaveValue('')
+    expect(screen.getByPlaceholderText('Start typing, or paste a quick note...')).toBeInTheDocument()
+  })
+
+  it('creates a new project with a first blank text version and activates inline naming', () => {
     renderAppWithState(appStateWithProjects())
 
     fireEvent.click(screen.getByRole('button', { name: 'New project' }))
 
-    expect(screen.getByRole('button', { name: 'Project 3' })).toBeInTheDocument()
+    const input = screen.getByLabelText('Rename Project 3')
+    expect(input).toHaveValue('')
+    expect(input).toHaveAttribute('placeholder', 'Project 3')
     expect(screen.getByLabelText('Project 3 editor')).toBeInTheDocument()
     expect(screen.getByRole('combobox')).toHaveValue('text')
     expect(screen.getByLabelText('Editor')).toHaveValue('')
+
+    fireEvent.change(input, { target: { value: 'Scratch Inbox' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+
+    expect(screen.getByRole('button', { name: 'Scratch Inbox' })).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent('Renamed to Scratch Inbox')
+  })
+
+  it('accepts the suggested Project N name with ArrowRight while inline naming', () => {
+    renderAppWithState(appStateWithProjects())
+
+    fireEvent.click(screen.getByRole('button', { name: 'New project' }))
+
+    const input = screen.getByLabelText('Rename Project 3')
+    fireEvent.keyDown(input, { key: 'ArrowRight' })
+
+    expect(input).toHaveValue('Project 3')
+  })
+
+  it('creates a new project from Notes and closes the menu into inline naming', () => {
+    renderAppWithState(appStateWithProjects())
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open notes menu' }))
+    fireEvent.click(screen.getByRole('button', { name: /New Project/ }))
+
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    expect(screen.getByLabelText('Rename Project 3')).toBeInTheDocument()
+    expect(screen.getByLabelText('Project 3 editor')).toBeInTheDocument()
   })
 
   it('renames a project from the tab context menu', () => {

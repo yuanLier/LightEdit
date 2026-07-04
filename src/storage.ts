@@ -3,25 +3,6 @@ import type { AppState, Project, TextType, Version } from './types'
 export const STORAGE_KEY = 'lightedit:v0.4:reference'
 const TEXT_TYPES = new Set<TextType>(['text', 'sql', 'json'])
 
-const sampleJson = `{
-  "project": "LightEdit",
-  "type": "note",
-  "createdAt": "2025-05-29T09:41:00Z",
-  "content": {
-    "title": "LightEdit",
-    "body": "A minimal editor for quick thoughts",
-    "tags": ["idea", "product", "minimal"],
-    "pinned": true
-  },
-  "meta": {
-    "version": 3,
-    "author": "you",
-    "updatedAt": "2025-05-29T09:41:00Z"
-  }
-}`
-
-const apiJson = `{"endpoint":"/api/lightedit","method":"POST","payload":{"type":"json","draft":true}}`
-
 function createId() {
   return crypto.randomUUID?.() ?? Math.random().toString(36).slice(2)
 }
@@ -40,13 +21,14 @@ function createVersion(
   projectId: string,
   versionIndex: number,
   now: number,
+  type: TextType = 'text',
   content = '',
 ): Version {
   return {
     id: createId(),
     projectId,
     versionIndex,
-    type: 'json',
+    type,
     content,
     isStarred: false,
     createdAt: now,
@@ -57,20 +39,14 @@ function createVersion(
 export function createDefaultState(): AppState {
   const now = Date.now()
   const lightEdit = createProject('LightEdit', now)
-  const apiTest = createProject('API Test', now)
-  const versions = [
-    createVersion(lightEdit.id, 1, now, ''),
-    createVersion(lightEdit.id, 2, now, '{ "draft": true }'),
-    createVersion(lightEdit.id, 3, now, sampleJson),
-    createVersion(apiTest.id, 1, now, apiJson),
-  ]
+  const version = createVersion(lightEdit.id, 1, now)
 
   return {
-    projects: [lightEdit, apiTest],
-    versions,
-    openProjectIds: [lightEdit.id, apiTest.id],
+    projects: [lightEdit],
+    versions: [version],
+    openProjectIds: [lightEdit.id],
     activeProjectId: lightEdit.id,
-    activeVersionId: versions[2].id,
+    activeVersionId: version.id,
     isPinned: false,
   }
 }

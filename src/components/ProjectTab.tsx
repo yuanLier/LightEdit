@@ -10,6 +10,7 @@ type ProjectTabProps = {
   project: Project
   active: boolean
   renaming: boolean
+  renameSuggestion: boolean
   onSelect: () => void
   onStartRename: () => void
   onRename: (name: string) => void
@@ -22,6 +23,7 @@ export default function ProjectTab({
   project,
   active,
   renaming,
+  renameSuggestion,
   onSelect,
   onStartRename,
   onRename,
@@ -44,12 +46,16 @@ export default function ProjectTab({
 
   useEffect(() => {
     if (!renaming) return
-    setDraftName(project.name)
+    setDraftName(renameSuggestion ? '' : project.name)
     window.requestAnimationFrame(() => {
       inputRef.current?.focus()
+      if (renameSuggestion) {
+        inputRef.current?.setSelectionRange(0, 0)
+        return
+      }
       inputRef.current?.select()
     })
-  }, [project.name, renaming])
+  }, [project.name, renameSuggestion, renaming])
 
   useEffect(() => {
     return () => clearTooltipTimer()
@@ -113,6 +119,14 @@ export default function ProjectTab({
       event.preventDefault()
       commitRename()
     }
+    if (event.key === 'ArrowRight' && renameSuggestion && !draftName) {
+      event.preventDefault()
+      setDraftName(project.name)
+      window.requestAnimationFrame(() => {
+        const input = inputRef.current
+        input?.setSelectionRange(project.name.length, project.name.length)
+      })
+    }
     if (event.key === 'Escape') {
       event.preventDefault()
       onCancelRename()
@@ -132,6 +146,7 @@ export default function ProjectTab({
           className="projectTabRename"
           data-window-control
           aria-label={`Rename ${project.name}`}
+          placeholder={renameSuggestion ? project.name : undefined}
           value={draftName}
           onBlur={commitRename}
           onChange={(event) => setDraftName(event.target.value)}

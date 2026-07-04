@@ -28,6 +28,7 @@ export default function App() {
   const [state, setState] = useState<AppState>(() => loadState() ?? createDefaultState())
   const [notesOpen, setNotesOpen] = useState(false)
   const [renamingProjectId, setRenamingProjectId] = useState<string | null>(null)
+  const [renameSuggestionProjectId, setRenameSuggestionProjectId] = useState<string | null>(null)
   const [toast, setToast] = useState<ToastState | null>(null)
 
   const activeProject = state.projects.find((project) => project.id === state.activeProjectId)
@@ -110,7 +111,10 @@ export default function App() {
   }
 
   function addProject() {
-    setState((current) => addProjectTransition(current, transitionOptions()))
+    const nextState = addProjectTransition(state, transitionOptions())
+    setState(nextState)
+    setRenamingProjectId(nextState.activeProjectId)
+    setRenameSuggestionProjectId(nextState.activeProjectId)
     setNotesOpen(false)
   }
 
@@ -118,6 +122,7 @@ export default function App() {
     const project = state.projects.find((candidate) => candidate.id === projectId)
     const nextName = name.trim()
     setRenamingProjectId(null)
+    setRenameSuggestionProjectId(null)
     if (!project || !nextName || nextName === project.name) return
 
     setState((current) => renameProjectTransition(current, projectId, nextName, Date.now()).state)
@@ -134,6 +139,7 @@ export default function App() {
 
     setState((current) => closeProjectTabTransition(current, projectId).state)
     setRenamingProjectId((current) => (current === projectId ? null : current))
+    setRenameSuggestionProjectId((current) => (current === projectId ? null : current))
   }
 
   function deleteProject(projectId: string) {
@@ -155,11 +161,13 @@ export default function App() {
     setState((current) => deleteProjectTransition(current, projectId, transitionOptions()))
     setNotesOpen(false)
     setRenamingProjectId((current) => (current === projectId ? null : current))
+    setRenameSuggestionProjectId((current) => (current === projectId ? null : current))
     showToast(`Deleted ${project.name}`, {
       label: 'Undo',
       onSelect: () => {
         setState((current) => ({ ...previousState, isPinned: current.isPinned }))
         setRenamingProjectId(null)
+        setRenameSuggestionProjectId(null)
         setNotesOpen(false)
         showToast(`Restored ${project.name}`)
       },
@@ -237,15 +245,22 @@ export default function App() {
           openProjects={openProjects}
           activeProjectId={state.activeProjectId}
           renamingProjectId={renamingProjectId}
+          renameSuggestionProjectId={renameSuggestionProjectId}
           isPinned={state.isPinned}
           notesOpen={notesOpen}
           onToggleNotes={() => setNotesOpen((open) => !open)}
           onCloseNotes={() => setNotesOpen(false)}
           onOpenProject={openProject}
           onAddProject={addProject}
-          onStartRenameProject={setRenamingProjectId}
+          onStartRenameProject={(projectId) => {
+            setRenamingProjectId(projectId)
+            setRenameSuggestionProjectId(null)
+          }}
           onRenameProject={renameProject}
-          onCancelRenameProject={() => setRenamingProjectId(null)}
+          onCancelRenameProject={() => {
+            setRenamingProjectId(null)
+            setRenameSuggestionProjectId(null)
+          }}
           onCloseProject={closeProjectTab}
           onDeleteProject={deleteProject}
           onTogglePin={togglePin}

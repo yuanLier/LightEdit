@@ -64,6 +64,7 @@ export default function EditorPane({ type, content, onChange }: EditorPaneProps)
           value={content}
           onChange={(event) => onChange(event.target.value)}
           onKeyDown={handleKeyDown}
+          placeholder="Start typing, or paste a quick note..."
           spellCheck={false}
           autoCapitalize="off"
           autoComplete="off"

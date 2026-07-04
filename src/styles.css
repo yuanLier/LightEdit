@@ -439,6 +439,11 @@ button {
   box-shadow: 0 0 0 2px rgba(239, 161, 26, 0.1);
 }
 
+.projectTabRename::placeholder {
+  color: rgba(92, 86, 76, 0.42);
+  opacity: 1;
+}
+
 .projectTab:hover {
   background: var(--hover-soft);
 }
@@ -871,6 +876,16 @@ button {
   color: rgba(47, 42, 35, 0.02);
   caret-color: #2f2a23;
   background: transparent;
+}
+
+.codeInput::placeholder {
+  color: rgba(92, 86, 76, 0.32);
+  opacity: 1;
+}
+
+.codeInput:hover::placeholder,
+.codeInput:focus::placeholder {
+  color: rgba(92, 86, 76, 0.42);
 }
 
 .codeInput::selection {
